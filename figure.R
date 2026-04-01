@@ -84,12 +84,14 @@ load_lab_data <- function(path, case_id, ref_date) {
 # 'hospitalisation' is always placed at the bottom.
 # =============================================================================
 make_gantt_layers <- function(data, highlight_days = NULL) {
-  other_classes  <- sort(setdiff(unique(data$CLASS), "hospitalisation"))
-  class_levels   <- c("hospitalisation", other_classes)
-
+  # Order treatments by their earliest start date.
+  # Row i=1 is the bottom of the chart; i=N is the top.
+  # Sorting descending puts the earliest-starting treatment at the top (i=N).
   sorted <- data %>%
-    mutate(CLASS = factor(CLASS, levels = class_levels)) %>%
-    arrange(CLASS, TREATMENT)
+    group_by(TREATMENT) %>%
+    mutate(first_start = min(START_rel, na.rm = TRUE)) %>%
+    ungroup() %>%
+    arrange(desc(first_start))
 
   unique_treatments <- unique(sorted$TREATMENT)
   layers <- list()
