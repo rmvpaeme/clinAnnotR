@@ -67,10 +67,13 @@ load_lab_data <- function(path, case_id, ref_date) {
   read_excel(path) %>%
     filter(patientID == case_id) %>%
     mutate(
-      # Flag below-detection-limit entries (e.g. "<1", "<0.1") and convert to
-      # the numeric limit value so they can still be placed on a log axis.
-      bdl       = startsWith(as.character(value), "<"),
-      value_num = as.numeric(sub("<", "", as.character(value))),
+      # Flag below-detection-limit entries ("<X") and zero values: both are
+      # "undetectable" and cannot be shown on a log10 axis without a floor.
+      # Zero values are plotted at 0.5 (one step below the "<1" limit of 1)
+      # so the downward-triangle marker is still visible on the log scale.
+      bdl       = startsWith(as.character(value), "<") |
+                    as.numeric(sub("<", "", as.character(value))) == 0,
+      value_num = pmax(as.numeric(sub("<", "", as.character(value))), 0.5),
       reldate   = as.numeric(difftime(combine_date_time(date, time), .origin, units = "days"))
     )
 }
@@ -133,27 +136,43 @@ make_gantt_layers <- function(data, highlight_days = NULL) {
 # LAB-VALUE PANEL (log10 y-axis, categories A / B / C mixed)
 # =============================================================================
 make_lab_panel <- function(lab_data, x_max) {
-  wbc_data <- lab_data %>% filter(parameter == "WBC (/µL)")
-  ymin_val <- if (nrow(wbc_data) > 0) max(1, min(wbc_data$value_num, na.rm = TRUE)) else 1
-  ymax_val <- if (nrow(wbc_data) > 0) max(wbc_data$value_num, na.rm = TRUE)         else 1e4
+  # Y-axis limits must span ALL parameters, not just WBC.
+  # Restricting to WBC clips BM blast values (different unit/scale) entirely.
+  pos_vals <- lab_data$value_num[lab_data$value_num > 0]
+  ymin_val <- max(0.5, min(pos_vals, na.rm = TRUE))
+  ymax_val <- max(pos_vals, na.rm = TRUE)
 
-  bdl_data <- lab_data %>% filter(bdl)
+  bdl_data  <- lab_data %>% filter(bdl)
+  blast_data <- lab_data %>% filter(parameter == "BM blasts with IF (%)")
 
   ggplot() +
+    # Category A: WBC — line
     geom_line(
-      data = lab_data %>% filter(category == "A"),
+      data      = lab_data %>% filter(category == "A"),
       aes(x = reldate, y = value_num, col = parameter)
     ) +
+    # Category B: peripheral blasts — points only
     geom_point(
       data = lab_data %>% filter(category == "B"),
       aes(x = reldate, y = value_num, col = parameter)
     ) +
-    geom_line(
-      data = lab_data %>% filter(category == "C"),
-      aes(x = reldate, y = value_num, col = parameter)
+    # Category C: BM blasts — points only (no connecting line; measurements
+    # are sparse bone marrow samples, not a continuous time series)
+    geom_point(
+      data  = blast_data %>% filter(!bdl),
+      aes(x = reldate, y = value_num, col = parameter),
+      size  = 2.5
     ) +
-    # Below-detection-limit points: downward triangle at the detection limit.
-    # Plotted on top so the marker is always visible even on a line.
+    # Direct value labels for BM blasts (avoids relying on a shared log axis)
+    geom_text(
+      data    = blast_data %>% filter(!bdl),
+      aes(x = reldate, y = value_num, label = round(value_num, 1)),
+      vjust   = -0.8,
+      size    = 2.8,
+      color   = PARAM_COLORS[["BM blasts with IF (%)"]],
+      show.legend = FALSE
+    ) +
+    # Below-detection-limit: downward open triangle at the detection limit
     geom_point(
       data  = bdl_data,
       aes(x = reldate, y = value_num, col = parameter,
@@ -163,11 +182,13 @@ make_lab_panel <- function(lab_data, x_max) {
     scale_color_manual(values = PARAM_COLORS) +
     scale_shape_manual(
       name   = NULL,
-      values = c("Below detection limit" = 6)   # open downward triangle
+      values = c("Below detection limit" = 6)
     ) +
     scale_y_continuous(
-      trans  = "log10",
-      limits = c(ymin_val, ymax_val)
+      trans   = "log10",
+      limits  = c(ymin_val, ymax_val),
+      breaks  = 10^seq(-1, 6),
+      labels  = scales::label_number(big.mark = ",", drop0trailing = TRUE)
     ) +
     annotation_logticks(sides = "l", linewidth = 0.2) +
     xlim(-10, x_max) +
@@ -241,7 +262,7 @@ final_figure <- ggarrange(plotlist = panels, ncol = 1)
 print(final_figure)
 
 ggsave(
-  "~/2026_TP53/figure.svg",
+  "/Users/rmvpaeme/2026_TP53/figure.svg",
   plot   = final_figure,
   width  = 16.8,
   height = 14,
@@ -251,7 +272,7 @@ ggsave(
 )
 
 ggsave(
-  "~/2026_TP53/figure.png",
+  "/Users/rmvpaeme/2026_TP53/figure.png",
   plot   = final_figure,
   width  = 10,
   height = 12,
