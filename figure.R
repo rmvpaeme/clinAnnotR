@@ -24,10 +24,13 @@ NORD <- list(
   muted  = "#4C566A"
 )
 
-CATEGORY_COLORS <- list(
-  A = c(NORD$red,    NORD$blue,   NORD$yellow),
-  B = c(NORD$blue,   NORD$yellow, NORD$purple, NORD$green),
-  C = c(NORD$red,    NORD$yellow, NORD$purple)
+# Named per-parameter colour map.  scale_color_manual() requires names that
+# match the 'parameter' column values; unnamed or category-keyed vectors cause
+# "No shared levels found" warnings and silently break colour assignment.
+PARAM_COLORS <- c(
+  "WBC (/µL)"               = NORD$blue,
+  "peripheral blasts (/µL)" = NORD$yellow,
+  "BM blasts with IF (%)"   = NORD$red
 )
 
 # =============================================================================
@@ -64,7 +67,11 @@ load_lab_data <- function(path, case_id, ref_date) {
   read_excel(path) %>%
     filter(patientID == case_id) %>%
     mutate(
-      reldate = as.numeric(difftime(combine_date_time(date, time), .origin, units = "days"))
+      # Flag below-detection-limit entries (e.g. "<1", "<0.1") and convert to
+      # the numeric limit value so they can still be placed on a log axis.
+      bdl       = startsWith(as.character(value), "<"),
+      value_num = as.numeric(sub("<", "", as.character(value))),
+      reldate   = as.numeric(difftime(combine_date_time(date, time), .origin, units = "days"))
     )
 }
 
@@ -127,23 +134,37 @@ make_gantt_layers <- function(data, highlight_days = NULL) {
 # =============================================================================
 make_lab_panel <- function(lab_data, x_max) {
   wbc_data <- lab_data %>% filter(parameter == "WBC (/µL)")
-  ymin_val <- if (nrow(wbc_data) > 0) max(1, min(wbc_data$value, na.rm = TRUE)) else 1
-  ymax_val <- if (nrow(wbc_data) > 0) max(wbc_data$value, na.rm = TRUE)         else 1e4
+  ymin_val <- if (nrow(wbc_data) > 0) max(1, min(wbc_data$value_num, na.rm = TRUE)) else 1
+  ymax_val <- if (nrow(wbc_data) > 0) max(wbc_data$value_num, na.rm = TRUE)         else 1e4
+
+  bdl_data <- lab_data %>% filter(bdl)
 
   ggplot() +
     geom_line(
       data = lab_data %>% filter(category == "A"),
-      aes(x = reldate, y = value, col = parameter)
+      aes(x = reldate, y = value_num, col = parameter)
     ) +
     geom_point(
       data = lab_data %>% filter(category == "B"),
-      aes(x = reldate, y = value, col = parameter)
+      aes(x = reldate, y = value_num, col = parameter)
     ) +
     geom_line(
       data = lab_data %>% filter(category == "C"),
-      aes(x = reldate, y = value, col = parameter)
+      aes(x = reldate, y = value_num, col = parameter)
     ) +
-    scale_color_manual(values = unlist(CATEGORY_COLORS)) +
+    # Below-detection-limit points: downward triangle at the detection limit.
+    # Plotted on top so the marker is always visible even on a line.
+    geom_point(
+      data  = bdl_data,
+      aes(x = reldate, y = value_num, col = parameter,
+          shape = "Below detection limit"),
+      size  = 3
+    ) +
+    scale_color_manual(values = PARAM_COLORS) +
+    scale_shape_manual(
+      name   = NULL,
+      values = c("Below detection limit" = 6)   # open downward triangle
+    ) +
     scale_y_continuous(
       trans  = "log10",
       limits = c(ymin_val, ymax_val)
@@ -232,8 +253,8 @@ ggsave(
 ggsave(
   "~/2026_TP53/figure.png",
   plot   = final_figure,
-  width  = 14,
-  height = 16,
+  width  = 10,
+  height = 12,
   units  = "in",
   dpi    = 300,
   device = "png"
