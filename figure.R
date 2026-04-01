@@ -33,17 +33,24 @@ CATEGORY_COLORS <- list(
 # =============================================================================
 # DATA LOADING
 # =============================================================================
+# Combine a date and a time column into a single POSIXct.
+# readxl returns dates/datetimes as POSIXct or Date; paste() on those objects
+# can append a timezone suffix ("2025-06-03 UTC") that makes as_datetime() fail.
+# format() with an explicit format string prevents that.
+combine_date_time <- function(date_col, time_col) {
+  as_datetime(paste(
+    format(date_col, "%Y-%m-%d"),
+    format(time_col, "%H:%M:%S")
+  ))
+}
+
 load_treatment_data <- function(path, case_id, ref_date) {
   ref <- ymd_hms(paste(ref_date, "00:00:00"))
   read_excel(path) %>%
     filter(PATIENTID == case_id) %>%
     mutate(
-      START_rel = as.numeric(difftime(
-        as_datetime(paste(START, strftime(START, "%H:%M:%S"))), ref, units = "days"
-      )),
-      END_rel = as.numeric(difftime(
-        as_datetime(paste(END,   strftime(START, "%H:%M:%S"))), ref, units = "days"
-      ))
+      START_rel = as.numeric(difftime(combine_date_time(START, START), ref, units = "days")),
+      END_rel   = as.numeric(difftime(combine_date_time(END,   START), ref, units = "days"))
     )
 }
 
@@ -52,9 +59,7 @@ load_lab_data <- function(path, case_id, ref_date) {
   read_excel(path) %>%
     filter(patientID == case_id) %>%
     mutate(
-      reldate = as.numeric(difftime(
-        as_datetime(paste(date, strftime(time, "%H:%M:%S"))), ref, units = "days"
-      ))
+      reldate = as.numeric(difftime(combine_date_time(date, time), ref, units = "days"))
     )
 }
 
