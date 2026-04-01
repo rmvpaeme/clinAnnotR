@@ -33,33 +33,38 @@ CATEGORY_COLORS <- list(
 # =============================================================================
 # DATA LOADING
 # =============================================================================
-# Combine a date and a time column into a single POSIXct.
-# readxl returns dates/datetimes as POSIXct or Date; paste() on those objects
-# can append a timezone suffix ("2025-06-03 UTC") that makes as_datetime() fail.
-# format() with an explicit format string prevents that.
+# Combine a date column and a time column (both POSIXct) into a single POSIXct.
+#
+# readxl reads date-only cells as POSIXct at midnight UTC and time-only cells
+# as POSIXct with a dummy date of 1899-12-31.  We cannot reliably round-trip
+# through character strings (timezone suffixes, locale formats, pre-epoch
+# arithmetic on the 1899 dummy date all cause as_datetime() to fail).
+# Instead we extract the date as midnight-UTC and the time as elapsed seconds,
+# then add them as numbers.
 combine_date_time <- function(date_col, time_col) {
-  as_datetime(paste(
-    format(date_col, "%Y-%m-%d"),
-    format(time_col, "%H:%M:%S")
-  ))
+  date_midnight <- as.POSIXct(as.Date(date_col, tz = "UTC"), tz = "UTC")
+  time_secs <- as.integer(format(time_col, "%H", tz = "UTC")) * 3600L +
+               as.integer(format(time_col, "%M", tz = "UTC")) * 60L +
+               as.integer(format(time_col, "%S", tz = "UTC"))
+  date_midnight + time_secs
 }
 
 load_treatment_data <- function(path, case_id, ref_date) {
-  ref <- ymd_hms(paste(ref_date, "00:00:00"))
+  .origin <- as.POSIXct(ref_date, format = "%Y-%m-%d", tz = "UTC")
   read_excel(path) %>%
     filter(PATIENTID == case_id) %>%
     mutate(
-      START_rel = as.numeric(difftime(combine_date_time(START, START), ref, units = "days")),
-      END_rel   = as.numeric(difftime(combine_date_time(END,   START), ref, units = "days"))
+      START_rel = as.numeric(difftime(combine_date_time(START, START), .origin, units = "days")),
+      END_rel   = as.numeric(difftime(combine_date_time(END,   START), .origin, units = "days"))
     )
 }
 
 load_lab_data <- function(path, case_id, ref_date) {
-  ref <- ymd_hms(paste(ref_date, "00:00:00"))
+  .origin <- as.POSIXct(ref_date, format = "%Y-%m-%d", tz = "UTC")
   read_excel(path) %>%
     filter(patientID == case_id) %>%
     mutate(
-      reldate = as.numeric(difftime(combine_date_time(date, time), ref, units = "days"))
+      reldate = as.numeric(difftime(combine_date_time(date, time), .origin, units = "days"))
     )
 }
 
@@ -172,8 +177,8 @@ make_gantt_panel <- function(treatment_data, important_days, x_max) {
 # BUILD ONE CASE FIGURE
 # =============================================================================
 build_case_figure <- function(case_id, ref_date, important_days,
-                              treatment_path = "~/2026_TP53/treatment_TP53.xlsx",
-                              lab_path       = "~/2026_TP53/labvals.xlsx",
+                              treatment_path = "/Users/rmvpaeme/2026_TP53/treatment_TP53.xlsx",
+                              lab_path       = "/Users/rmvpaeme/2026_TP53/labvals.xlsx",
                               gantt_height   = 0.35) {
   treatments <- load_treatment_data(treatment_path, case_id, ref_date)
   labs_df    <- load_lab_data(lab_path, case_id, ref_date)
