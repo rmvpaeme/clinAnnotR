@@ -272,8 +272,6 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
     left_join(tr_order %>% select(TREATMENT, y), by = "TREATMENT")
 
   n_rows  <- max(tr_order$y)
-  # Labels sit just outside the left edge of X_RANGE, aligned with lab panels
-  label_x <- X_RANGE[1] - 2
 
   ggplot() +
     geom_vline(
@@ -289,10 +287,10 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
       alpha = 0.85
     ) +
     scale_fill_identity() +
-    # Treatment name labels to the left of each bar
+    # Labels placed just left of each treatment's own first bar (nudge = -1 day)
     geom_text(
       data  = tr_order,
-      aes(x = label_x, y = y, label = TREATMENT),
+      aes(x = first_start - 1, y = y, label = TREATMENT),
       hjust = 1, size = 3, color = NORD$dark
     ) +
     scale_x_continuous(
