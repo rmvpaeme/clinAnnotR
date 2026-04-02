@@ -197,20 +197,21 @@ make_blasts_panel <- function(lab_data, highlight_days) {
 
   ggplot() +
     highlight_lines(highlight_days) +
-    # Detected blasts
+    # Detected blasts: colour = case, shape = "Detected"
     geom_point(
       data  = bl_det,
       aes(x = reldate, y = value_num,
-          color = case_id, shape = case_id),
+          color = case_id,
+          shape = "Detected"),
       size  = 3
     ) +
-    # BDL blasts — open downward triangle; shape mapped to a constant string
-    # so it gets its own legend entry separate from the case shape legend.
+    # BDL blasts: colour = case, shape = "Below detection limit"
     geom_point(
       data  = bl_bdl,
-      aes(x = reldate, y = value_num, color = case_id,
+      aes(x = reldate, y = value_num,
+          color = case_id,
           shape = "Below detection limit"),
-      size = 3
+      size  = 3
     ) +
     # Value labels for detected points
     geom_text_repel(
@@ -236,20 +237,17 @@ make_blasts_panel <- function(lab_data, highlight_days) {
       min.segment.length = 0.2,
       show.legend  = FALSE
     ) +
-    scale_color_manual(name = "Case", values = CASE_PALETTE) +
-    scale_shape_manual(
+    scale_color_manual(
       name   = "Case",
-      values = c(CASE_SHAPE, "Below detection limit" = 6),
-      breaks = names(CASE_SHAPE),          # only case shapes in the Case legend
-      guide  = guide_legend(order = 1, override.aes = list(color = unname(CASE_PALETTE)))
+      values = CASE_PALETTE
     ) +
-    guides(
-      color = guide_legend(order = 1, override.aes = list(shape = unname(CASE_SHAPE))),
-      shape = guide_legend(order = 2,
-                           override.aes = list(
-                             color = c(unname(CASE_PALETTE), NORD$dark),
-                             shape = c(unname(CASE_SHAPE),  6)
-                           ))
+    scale_shape_manual(
+      name   = NULL,
+      values = c("Detected" = 16, "Below detection limit" = 6),
+      guide  = guide_legend(
+        order        = 2,
+        override.aes = list(color = NORD$dark)
+      )
     ) +
     scale_y_log10(
       limits = c(0.05, 200),
@@ -260,8 +258,10 @@ make_blasts_panel <- function(lab_data, highlight_days) {
     coord_cartesian(xlim = X_RANGE, clip = "off") +
     labs(y = "BM blasts (%)") +
     guides(
-      color = guide_legend(override.aes = list(shape = c(16, 17))),
-      shape = "none"
+      color = guide_legend(
+        order        = 1,
+        override.aes = list(shape = 16)
+      )
     ) +
     theme_clinical(show_x = FALSE)
 }
