@@ -108,29 +108,28 @@ theme_clinical <- function(show_x = FALSE, legend_pos = "right") {
 # `timepoints` is a named numeric vector, e.g. c("D1" = 1, "D22" = 22).
 # `y_label` is the y coordinate (in data units) where labels are placed;
 # pass Inf to sit just inside the top of the panel via vjust.
-named_vlines <- function(timepoints, y_label = Inf) {
+named_vlines <- function(timepoints, y_label = Inf, labels = TRUE) {
   if (is.null(timepoints) || length(timepoints) == 0) return(list())
-  label_df <- tibble(
-    x     = unname(timepoints),
-    label = names(timepoints)
-  )
-  list(
+  layers <- list(
     geom_vline(
       xintercept = unname(timepoints),
       linetype   = "dashed", color = NORD$muted,
       linewidth  = 0.4, alpha = 0.5
-    ),
-    geom_text(
-      data        = label_df,
-      aes(x = x, y = y_label, label = label),
-      angle       = 90,
-      hjust       = 1.1,
-      vjust       = 0.4,
-      size        = 2.5,
-      color       = NORD$muted,
-      inherit.aes = FALSE
     )
   )
+  if (labels) {
+    label_df <- tibble(x = unname(timepoints), label = names(timepoints))
+    layers <- c(layers, list(
+      geom_text(
+        data        = label_df,
+        aes(x = x, y = y_label, label = label),
+        angle       = 90, hjust = 1.1, vjust = 0.4,
+        size        = 2.5, color = NORD$muted,
+        inherit.aes = FALSE
+      )
+    ))
+  }
+  layers
 }
 
 # =============================================================================
@@ -217,7 +216,7 @@ make_blasts_panel <- function(lab_data, highlight_days) {
   bl_bdl <- bl %>% filter(bdl)
 
   ggplot() +
-    named_vlines(highlight_days) +
+    named_vlines(highlight_days, labels = FALSE) +
     # Detected blasts: colour = case, shape = "Detected"
     geom_point(
       data  = bl_det,
@@ -364,8 +363,8 @@ protocol_days <- c("D1" = 1, "D22" = 22, "D49" = 49)
 # Per-case treatment-start timepoints derived from the data.
 # Only treatments listed per case are shown; others are omitted.
 TX_SHOW <- list(
-  "Case 1" = c("ADE", "FLA"),   # MEC removed
-  "Case 2" = character(0)        # MEC, ADE, HAM, FLA all removed
+  "Case 1" = character(0),
+  "Case 2" = character(0)
 )
 
 tx_starts <- function(case) {
