@@ -193,19 +193,6 @@ make_blasts_panel <- function(lab_data, highlight_days) {
 
   ggplot() +
     highlight_lines(highlight_days) +
-    # Clinical reference lines
-    geom_hline(
-      yintercept = BLAST_REF, linetype = "dotted",
-      color = NORD$muted, linewidth = 0.4, alpha = 0.8
-    ) +
-    annotate(
-      "text",
-      x     = X_RANGE[2] - 1,
-      y     = BLAST_REF,
-      label = names(BLAST_REF),
-      hjust = 1, vjust = -0.4,
-      size  = 2.4, color = NORD$muted
-    ) +
     # Detected blasts
     geom_point(
       data  = bl_det,
@@ -284,35 +271,16 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
   plot_data <- treatment_data %>%
     left_join(tr_order %>% select(TREATMENT, y), by = "TREATMENT")
 
-  # Class grouping for right-side bracket + label
-  class_spans <- tr_order %>%
-    group_by(CLASS) %>%
-    summarise(
-      y_lo    = min(y) - 0.45,
-      y_hi    = max(y) + 0.45,
-      y_mid   = mean(y),
-      color   = first(COLOR),
-      .groups = "drop"
-    )
-
-  n_rows   <- max(tr_order$y)
-  # Treatment labels sit just left of X_RANGE so they align with the lab panels
-  label_x  <- X_RANGE[1] - 2
-  x_lo     <- X_RANGE[1]
-  x_hi     <- X_RANGE[2]
+  n_rows  <- max(tr_order$y)
+  # Labels sit just outside the left edge of X_RANGE, aligned with lab panels
+  label_x <- X_RANGE[1] - 2
 
   ggplot() +
-    # Alternating row shading
-    geom_rect(
-      data = tr_order %>% filter(y %% 2 == 0),
-      aes(xmin = -Inf, xmax = Inf, ymin = y - 0.5, ymax = y + 0.5),
-      fill = NORD$grid, alpha = 0.4, inherit.aes = FALSE
-    ) +
     geom_vline(
       xintercept = highlight_days,
       linetype = "dashed", color = NORD$muted, linewidth = 0.4, alpha = 0.5
     ) +
-    # Treatment bars, coloured by CLASS via the COLOR column in the data
+    # Treatment bars coloured by CLASS via the COLOR column in the source data
     geom_rect(
       data = plot_data,
       aes(xmin = START_rel, xmax = END_rel,
@@ -321,33 +289,18 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
       alpha = 0.85
     ) +
     scale_fill_identity() +
-    # Treatment name labels
+    # Treatment name labels to the left of each bar
     geom_text(
       data  = tr_order,
       aes(x = label_x, y = y, label = TREATMENT),
-      hjust = 1, size = 2.8, color = NORD$dark
+      hjust = 1, size = 3, color = NORD$dark
     ) +
-    # Right-side CLASS bracket
-    geom_segment(
-      data = class_spans,
-      aes(x = x_hi + 2, xend = x_hi + 2,
-          y = y_lo, yend = y_hi,
-          color = color),
-      linewidth = 1, inherit.aes = FALSE
-    ) +
-    geom_text(
-      data  = class_spans,
-      aes(x = x_hi + 4, y = y_mid,
-          label = CLASS, color = color),
-      hjust = 0, size = 2.6, fontface = "italic"
-    ) +
-    scale_color_identity() +
     scale_x_continuous(
       name   = "Days from diagnosis",
       breaks = sort(unique(c(seq(0, 200, by = 50), highlight_days)))
     ) +
     coord_cartesian(
-      xlim = c(x_lo, x_hi),
+      xlim = X_RANGE,
       ylim = c(0.5, n_rows + 0.5),
       clip = "off"
     ) +
@@ -358,7 +311,7 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
       axis.ticks.y       = element_blank(),
       panel.grid.major.y = element_blank(),
       plot.title         = element_text(size = 9, face = "bold", margin = margin(b = 3)),
-      plot.margin        = margin(3, 70, 3, 5)   # right margin for class labels
+      plot.margin        = margin(3, 5, 3, 5)
     )
 }
 
