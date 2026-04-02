@@ -181,12 +181,13 @@ make_counts_panel <- function(lab_data, highlight_days) {
       guide  = guide_legend(order = 1)
     ) +
     # Zero-row tibble — registers "Peripheral blasts (/µL)" in the linetype
-    # scale so it gets its own legend key (no data drawn).
+    # scale. key_glyph = "point" draws a point in the legend instead of a line.
     geom_line(
-      data = wbc[0, ],
+      data      = wbc[0, ],
       aes(x = reldate, y = value_num,
           linetype = "Peripheral blasts (/\u00b5L)"),
-      color = NORD$dark
+      color     = NORD$dark,
+      key_glyph = "point"
     ) +
     scale_shape_manual(name = "Case", values = CASE_SHAPE) +
     scale_y_log10(
