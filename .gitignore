@@ -2,4 +2,6 @@
 Thumbs.db
 *.png
 *.svg
+*.pdf
 Rplot*
+*.xlsx
