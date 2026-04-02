@@ -267,7 +267,7 @@ make_blasts_panel <- function(lab_data, highlight_days) {
 # CLASS encoded by fill colour from the source data + a right-side bracket.
 # Alternating row shading aids row-tracking when many treatments overlap.
 # =============================================================================
-make_gantt_panel <- function(treatment_data, case_label, highlight_days) {
+make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x = FALSE) {
 
   # Row order: earliest first_start → top (i = n_rows), latest → bottom (i = 1)
   tr_order <- treatment_data %>%
@@ -296,11 +296,10 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days) {
     )
 
   n_rows   <- max(tr_order$y)
-  label_x  <- min(plot_data$START_rel, na.rm = TRUE) - 3   # left of first bar
-
-  # Per-case x range: small buffer around actual data
-  x_lo <- min(plot_data$START_rel, na.rm = TRUE) - 10
-  x_hi <- max(plot_data$END_rel,   na.rm = TRUE) + 5
+  # Treatment labels sit just left of X_RANGE so they align with the lab panels
+  label_x  <- X_RANGE[1] - 2
+  x_lo     <- X_RANGE[1]
+  x_hi     <- X_RANGE[2]
 
   ggplot() +
     # Alternating row shading
@@ -353,7 +352,7 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days) {
       clip = "off"
     ) +
     ggtitle(case_label) +
-    theme_clinical(show_x = TRUE, legend_pos = "none") +
+    theme_clinical(show_x = show_x, legend_pos = "none") +
     theme(
       axis.text.y        = element_blank(),
       axis.ticks.y       = element_blank(),
@@ -375,20 +374,23 @@ p_blasts <- make_blasts_panel(all_labs, shared_highlights)
 p_gantt1 <- make_gantt_panel(
   all_tx %>% filter(case_id == "Case 1"),
   "Case 1 - treatments",
-  cases[[1]]$highlight_days
+  cases[[1]]$highlight_days,
+  show_x = FALSE          # x-axis suppressed; Case 2 below carries the label
 )
 p_gantt2 <- make_gantt_panel(
   all_tx %>% filter(case_id == "Case 2"),
   "Case 2 - treatments",
-  cases[[2]]$highlight_days
+  cases[[2]]$highlight_days,
+  show_x = TRUE
 )
 
-# Layout:
-#   Row 1 (tall):   counts panel — full width
-#   Row 2 (medium): BM blasts   — full width
-#   Row 3 (medium): Case 1 Gantt | Case 2 Gantt — side by side
-final <- (p_counts / p_blasts / (p_gantt1 | p_gantt2)) +
-  plot_layout(heights = c(4, 2, 2.5)) +
+# Layout — all four panels stacked, full width, sharing the same x domain:
+#   Row 1 (tall):   counts (WBC + peripheral blasts)
+#   Row 2 (short):  BM blasts
+#   Row 3 (medium): Case 1 Gantt
+#   Row 4 (medium): Case 2 Gantt  ← carries the x-axis label
+final <- (p_counts / p_blasts / p_gantt1 / p_gantt2) +
+  plot_layout(heights = c(4, 2, 2, 2)) +
   plot_annotation(
     caption = "Dashed vertical lines: day 0 (diagnosis) and day 29. BDL = below detection limit (open downward triangle).",
     theme   = theme(plot.caption = element_text(size = 7, color = NORD$muted))
@@ -402,5 +404,5 @@ ggsave(
 )
 ggsave(
   "~/2026_TP53/figure_combined.png",
-  plot = final, width = 14, height = 16, units = "in", dpi = 300, device = "png"
+  plot = final, width = 7, height = 8, units = "in", dpi = 300, device = "png"
 )
