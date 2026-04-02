@@ -361,11 +361,17 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
 protocol_days <- c("D1" = 1, "D22" = 22, "D49" = 49)
 
 # Per-case treatment-start timepoints derived from the data.
-# Shown only on the per-case Gantt panels to avoid cluttering shared panels.
+# Only treatments listed per case are shown; others are omitted.
+TX_SHOW <- list(
+  "Case 1" = c("ADE", "FLA"),   # MEC removed
+  "Case 2" = character(0)        # MEC, ADE, HAM, FLA all removed
+)
+
 tx_starts <- function(case) {
+  treatments <- TX_SHOW[[case]]
+  if (length(treatments) == 0) return(setNames(numeric(0), character(0)))
   all_tx %>%
-    filter(case_id == case,
-           TREATMENT %in% c("HAM", "ADE", "MEC", "FLA")) %>%
+    filter(case_id == case, TREATMENT %in% treatments) %>%
     group_by(TREATMENT) %>%
     summarise(day = min(START_rel, na.rm = TRUE), .groups = "drop") %>%
     { setNames(.$day, .$TREATMENT) }
