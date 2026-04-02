@@ -132,30 +132,36 @@ make_counts_panel <- function(lab_data, highlight_days) {
 
   ggplot() +
     highlight_lines(highlight_days) +
-    # WBC: continuous line per case, distinguished by colour + linetype
+    # WBC: colored by case; linetype mapped to a constant string so the
+    # legend can show a single "WBC (/µL)" line entry (order 1).
     geom_line(
       data = wbc,
       aes(x = reldate, y = value_num,
           color    = case_id,
-          linetype = case_id),
-      linewidth = 0.65, key_glyph = "timeseries"
+          group    = case_id,
+          linetype = "WBC (/\u00b5L)"),
+      linewidth = 0.65
     ) +
-    # Peripheral blasts: points per case, distinguished by colour + shape
+    # Peripheral blasts: colour + shape encode case (order 2)
     geom_point(
       data  = peri_det,
-      aes(x = reldate, y = value_num,
-          color = case_id,
-          shape = case_id),
+      aes(x = reldate, y = value_num, color = case_id, shape = case_id),
       size  = 2
     ) +
     geom_point(
       data  = peri_bdl,
-      aes(x = reldate, y = value_num,
-          color = case_id),
-      shape = 6, size = 2.5   # open downward triangle = BDL
+      aes(x = reldate, y = value_num, color = case_id),
+      shape = 6, size = 2.5
     ) +
     scale_color_manual(name = "Case", values = CASE_PALETTE) +
-    scale_linetype_manual(name = "Case", values = c("Case 1" = "solid", "Case 2" = "dashed")) +
+    scale_linetype_manual(
+      name   = NULL,
+      values = c("WBC (/\u00b5L)" = "solid"),
+      guide  = guide_legend(
+        order        = 1,
+        override.aes = list(color = NORD$dark, linewidth = 0.65, shape = NA)
+      )
+    ) +
     scale_shape_manual(name = "Case", values = CASE_SHAPE) +
     scale_y_log10(
       limits = c(y_lo, y_hi),
@@ -164,16 +170,14 @@ make_counts_panel <- function(lab_data, highlight_days) {
     ) +
     annotation_logticks(sides = "l", linewidth = 0.2, color = NORD$muted) +
     coord_cartesian(xlim = X_RANGE, clip = "off") +
-    labs(y = "Count (/µL)") +
-    # Merge colour + linetype + shape legends so one row represents one case
+    labs(y = "Count (/\u00b5L)") +
     guides(
-      color    = guide_legend(order = 1, override.aes = list(shape = c(16, 17), linetype = c("solid","dashed"))),
-      linetype = "none",
-      shape    = "none"
+      color = guide_legend(
+        order        = 2,
+        override.aes = list(shape = unname(CASE_SHAPE), linetype = "blank")
+      ),
+      shape = "none"
     ) +
-    annotate("text", x = X_RANGE[1] + 1, y = y_hi * 0.55,
-             label = "WBC: line  |  Peripheral blasts: points",
-             hjust = 0, size = 2.5, color = NORD$muted, fontface = "italic") +
     theme_clinical(show_x = FALSE)
 }
 
