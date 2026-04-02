@@ -176,11 +176,17 @@ make_counts_panel <- function(lab_data, highlight_days) {
     scale_color_manual(name = "Case", values = CASE_PALETTE) +
     scale_linetype_manual(
       name   = NULL,
-      values = c("WBC (/\u00b5L)" = "solid"),
-      guide  = guide_legend(
-        order        = 1,
-        override.aes = list(color = NORD$dark, linewidth = 0.65, shape = NA)
-      )
+      values = c("WBC (/\u00b5L)"               = "solid",
+                 "Peripheral blasts (/\u00b5L)" = "blank"),
+      guide  = guide_legend(order = 1)
+    ) +
+    # Zero-row tibble — registers "Peripheral blasts (/µL)" in the linetype
+    # scale so it gets its own legend key (no data drawn).
+    geom_line(
+      data = wbc[0, ],
+      aes(x = reldate, y = value_num,
+          linetype = "Peripheral blasts (/\u00b5L)"),
+      color = NORD$dark
     ) +
     scale_shape_manual(name = "Case", values = CASE_SHAPE) +
     scale_y_log10(
@@ -192,11 +198,12 @@ make_counts_panel <- function(lab_data, highlight_days) {
     coord_cartesian(xlim = X_RANGE, clip = "off") +
     labs(y = "Count (/\u00b5L)") +
     guides(
-      color = guide_legend(
+      color    = guide_legend(
         order        = 2,
         override.aes = list(shape = unname(CASE_SHAPE), linetype = "blank")
       ),
-      shape = "none"
+      shape    = "none",
+      linetype = guide_legend(order = 1)
     ) +
     theme_clinical(show_x = FALSE)
 }
