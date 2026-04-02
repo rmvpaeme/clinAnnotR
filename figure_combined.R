@@ -335,7 +335,8 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
     ) +
     scale_x_continuous(
       name   = "Days from diagnosis",
-      breaks = sort(unique(c(seq(0, 200, by = 50), highlight_days)))
+      breaks = sort(unique(c(seq(0, 200, by = 50), highlight_days))) %>%
+                 setdiff(c(1, 49))
     ) +
     coord_cartesian(
       xlim = X_RANGE,
