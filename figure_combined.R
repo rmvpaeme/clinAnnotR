@@ -180,10 +180,11 @@ make_counts_panel <- function(lab_data, highlight_days) {
                  "Peripheral blasts (/\u00b5L)" = "blank"),
       guide  = guide_legend(order = 1)
     ) +
-    # Zero-row tibble — registers "Peripheral blasts (/µL)" in the linetype
-    # scale. key_glyph = "point" draws a point in the legend instead of a line.
+    # 1-row slice placed outside the visible range so it is clipped but still
+    # registers a legend entry. key_glyph = "point" renders a point symbol
+    # instead of a line in the legend key.
     geom_line(
-      data      = wbc[0, ],
+      data      = wbc[1, ] %>% mutate(reldate = -9999, value_num = -9999),
       aes(x = reldate, y = value_num,
           linetype = "Peripheral blasts (/\u00b5L)"),
       color     = NORD$dark,
