@@ -200,11 +200,13 @@ make_blasts_panel <- function(lab_data, highlight_days) {
           color = case_id, shape = case_id),
       size  = 3
     ) +
-    # BDL blasts — open downward triangle, colour still encodes case
+    # BDL blasts — open downward triangle; shape mapped to a constant string
+    # so it gets its own legend entry separate from the case shape legend.
     geom_point(
       data  = bl_bdl,
-      aes(x = reldate, y = value_num, color = case_id),
-      shape = 6, size = 3
+      aes(x = reldate, y = value_num, color = case_id,
+          shape = "Below detection limit"),
+      size = 3
     ) +
     # Value labels for detected points
     geom_text_repel(
@@ -231,7 +233,20 @@ make_blasts_panel <- function(lab_data, highlight_days) {
       show.legend  = FALSE
     ) +
     scale_color_manual(name = "Case", values = CASE_PALETTE) +
-    scale_shape_manual(name = "Case", values = CASE_SHAPE) +
+    scale_shape_manual(
+      name   = "Case",
+      values = c(CASE_SHAPE, "Below detection limit" = 6),
+      breaks = names(CASE_SHAPE),          # only case shapes in the Case legend
+      guide  = guide_legend(order = 1, override.aes = list(color = unname(CASE_PALETTE)))
+    ) +
+    guides(
+      color = guide_legend(order = 1, override.aes = list(shape = unname(CASE_SHAPE))),
+      shape = guide_legend(order = 2,
+                           override.aes = list(
+                             color = c(unname(CASE_PALETTE), NORD$dark),
+                             shape = c(unname(CASE_SHAPE),  6)
+                           ))
+    ) +
     scale_y_log10(
       limits = c(0.05, 200),
       breaks = c(0.1, 1, 5, 20, 100),
