@@ -104,11 +104,32 @@ theme_clinical <- function(show_x = FALSE, legend_pos = "right") {
     )
 }
 
-# Shared highlight-line layer (same days apply to both cases in shared panels)
-highlight_lines <- function(days) {
+# Draw named vertical reference lines with rotated labels at the top.
+# `timepoints` is a named numeric vector, e.g. c("D1" = 1, "D22" = 22).
+# `y_label` is the y coordinate (in data units) where labels are placed;
+# pass Inf to sit just inside the top of the panel via vjust.
+named_vlines <- function(timepoints, y_label = Inf) {
+  if (is.null(timepoints) || length(timepoints) == 0) return(list())
+  label_df <- tibble(
+    x     = unname(timepoints),
+    label = names(timepoints)
+  )
   list(
-    geom_vline(xintercept = days, linetype = "dashed",
-               color = NORD$muted, linewidth = 0.4, alpha = 0.5)
+    geom_vline(
+      xintercept = unname(timepoints),
+      linetype   = "dashed", color = NORD$muted,
+      linewidth  = 0.4, alpha = 0.5
+    ),
+    geom_text(
+      data        = label_df,
+      aes(x = x, y = y_label, label = label),
+      angle       = 90,
+      hjust       = 1.1,
+      vjust       = 0.4,
+      size        = 2.5,
+      color       = NORD$muted,
+      inherit.aes = FALSE
+    )
   )
 }
 
@@ -131,7 +152,7 @@ make_counts_panel <- function(lab_data, highlight_days) {
   y_hi <- 10^ceiling(log10(       max(all_vals, na.rm = TRUE)))
 
   ggplot() +
-    highlight_lines(highlight_days) +
+    named_vlines(highlight_days) +
     # WBC: colored by case; linetype mapped to a constant string so the
     # legend can show a single "WBC (/µL)" line entry (order 1).
     geom_line(
@@ -196,7 +217,7 @@ make_blasts_panel <- function(lab_data, highlight_days) {
   bl_bdl <- bl %>% filter(bdl)
 
   ggplot() +
-    highlight_lines(highlight_days) +
+    named_vlines(highlight_days) +
     # Detected blasts: colour = case, shape = "Detected"
     geom_point(
       data  = bl_det,
@@ -335,34 +356,50 @@ make_gantt_panel <- function(treatment_data, case_label, highlight_days, show_x 
 # =============================================================================
 # ASSEMBLE
 # =============================================================================
-# All highlight days are the same (0, 29) across both cases in the shared panels
-shared_highlights <- unique(unlist(map(cases, "highlight_days")))
 
-p_counts <- make_counts_panel(all_labs, shared_highlights)
-p_blasts <- make_blasts_panel(all_labs, shared_highlights)
+# Protocol-fixed timepoints (same x for both cases — shown on all panels)
+protocol_days <- c("D1" = 1, "D22" = 22, "D49" = 49)
+
+# Per-case treatment-start timepoints derived from the data.
+# Shown only on the per-case Gantt panels to avoid cluttering shared panels.
+tx_starts <- function(case) {
+  all_tx %>%
+    filter(case_id == case,
+           TREATMENT %in% c("HAM", "ADE", "MEC", "FLA")) %>%
+    group_by(TREATMENT) %>%
+    summarise(day = min(START_rel, na.rm = TRUE), .groups = "drop") %>%
+    { setNames(.$day, .$TREATMENT) }
+}
+
+gantt_highlights <- function(case) {
+  c(protocol_days, tx_starts(case))
+}
+
+p_counts <- make_counts_panel(all_labs, protocol_days)
+p_blasts <- make_blasts_panel(all_labs, protocol_days)
 
 p_gantt1 <- make_gantt_panel(
   all_tx %>% filter(case_id == "Case 1"),
   "Case 1 - treatments",
-  cases[[1]]$highlight_days,
-  show_x = FALSE          # x-axis suppressed; Case 2 below carries the label
+  gantt_highlights("Case 1"),
+  show_x = FALSE
 )
 p_gantt2 <- make_gantt_panel(
   all_tx %>% filter(case_id == "Case 2"),
   "Case 2 - treatments",
-  cases[[2]]$highlight_days,
+  gantt_highlights("Case 2"),
   show_x = TRUE
 )
 
 # Layout — all four panels stacked, full width, sharing the same x domain:
 #   Row 1 (tall):   counts (WBC + peripheral blasts)
 #   Row 2 (short):  BM blasts
-#   Row 3 (medium): Case 1 Gantt
-#   Row 4 (medium): Case 2 Gantt  ← carries the x-axis label
+#   Row 3 (medium): Case 1 Gantt  (protocol + treatment-start lines)
+#   Row 4 (medium): Case 2 Gantt  (protocol + treatment-start lines)
 final <- (p_counts / p_blasts / p_gantt1 / p_gantt2) +
   plot_layout(heights = c(4, 2, 2, 2)) +
   plot_annotation(
-    caption = "Dashed vertical lines: day 0 (diagnosis) and day 29. BDL = below detection limit (open downward triangle).",
+    caption = "Dashed lines: CHIP-AML protocol timepoints (D1/D22/D49) and treatment starts. BDL = below detection limit.",
     theme   = theme(plot.caption = element_text(size = 7, color = NORD$muted))
   )
 
