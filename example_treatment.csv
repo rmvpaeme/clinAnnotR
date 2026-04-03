@@ -1,0 +1,21 @@
+patientID,TREATMENT,START_rel,END_rel,COLOR,CLASS
+Case 1,Daunorubicin,1,3,#D08770,Anthracycline
+Case 1,Cytarabine,1,7,#88C0D0,Antimetabolite
+Case 1,Etoposide,22,28,#A3BE8C,Topoisomerase inhibitor
+Case 1,Cytarabine,22,28,#88C0D0,Antimetabolite
+Case 1,Venetoclax,49,185,#B48EAD,BCL2 inhibitor
+Case 1,Azacitidine,49,53,#EBCB8B,Hypomethylating
+Case 1,Azacitidine,77,81,#EBCB8B,Hypomethylating
+Case 1,Azacitidine,105,109,#EBCB8B,Hypomethylating
+Case 1,Azacitidine,133,137,#EBCB8B,Hypomethylating
+Case 1,Azacitidine,161,165,#EBCB8B,Hypomethylating
+Case 2,Cytarabine,1,7,#88C0D0,Antimetabolite
+Case 2,Daunorubicin,1,3,#D08770,Anthracycline
+Case 2,Etoposide,22,28,#A3BE8C,Topoisomerase inhibitor
+Case 2,Cytarabine,22,28,#88C0D0,Antimetabolite
+Case 2,Venetoclax,49,185,#B48EAD,BCL2 inhibitor
+Case 2,Decitabine,49,53,#EBCB8B,Hypomethylating
+Case 2,Decitabine,77,81,#EBCB8B,Hypomethylating
+Case 2,Decitabine,105,109,#EBCB8B,Hypomethylating
+Case 2,Decitabine,133,137,#EBCB8B,Hypomethylating
+Case 2,Decitabine,161,165,#EBCB8B,Hypomethylating
