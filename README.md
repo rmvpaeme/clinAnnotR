@@ -1,6 +1,6 @@
 # clinAnnotR
 
-![clinAnnotR hex logo](man/figures/logo.png)
+<p align="center"><img src="man/figures/logo.png" width="180" alt="clinAnnotR hex logo"/></p>
 
 R package for generating publication-quality multi-panel clinical figures that combine **any numerical laboratory time-series** with per-case **treatment Gantt charts**.
 
