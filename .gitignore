@@ -1,20 +1,32 @@
 .DS_Store
 Thumbs.db
+
+# Generated figures — allow example_casereport/ and man/figures/ only
 *.png
-!figure_combined_example.png
-!man/figures/logo.png
 *.svg
 *.pdf
 Rplot*
+!man/figures/logo.png
+!example_casereport/*.png
+!example_casereport/*.pdf
+!example_casereport/*.svg
+
+# Excel files — allow inst/extdata/ and example_casereport/ only
 *.xlsx
 !inst/extdata/*.xlsx
-example_casereport/*
-!example_casereport/labvals.xlsx
-!example_casereport/treatment.xlsx
-!example_casereport/figure.png
-figure_combined_example.R
-CLAUDE.md
+!example_casereport/*.xlsx
+
+# Private case data (real patient data, not for public repo)
 casereport_1/
 casereport_2/
 casereport_3/
+
+# Dev / working files not for public repo
+figure_combined_example.R
+figure_combined_example.png
+figure_combined.R
+figure.R
+example_labvals.csv
+example_treatment.csv
+CLAUDE.md
 testpackage.R
