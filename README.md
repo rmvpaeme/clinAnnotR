@@ -15,14 +15,14 @@ R package for generating publication-quality multi-panel clinical figures that c
 ## Features
 
 - Any lab parameter can be shown as a **line**, a **point series**, or both — no hardcoded parameter names
-- Supports **log₁₀ and linear** y-axes per panel
+- Supports **log₁₀ and linear** y-axes per panel, mixed across panels in the same figure
 - **Below-detection-limit** (BDL) values (`<X` notation) are automatically flagged and plotted with a dedicated open-triangle symbol (∇)
 - Optional **direct value labels** on points via ggrepel
-- **Single-case mode**: when only one case is present, colour is automatically mapped to **parameter** (each parameter gets a distinct colour; all lines are solid) instead of to case
+- **Single-case mode**: colour is automatically mapped to **parameter** (each parameter gets a distinct colour; all lines are solid); multi-case mode maps colour to case
 - **Treatment Gantt charts** with multi-segment bars (repeated cycles), custom colours, and drug name labels
 - **Gantt panels scale automatically** in height based on the number of treatment rows (`max(1.5, n_treatments × 0.4)`)
-- **Treatments grouped by drug class**: rows are ordered by class (earliest first), with separator lines and italic class labels; duplicate segments are silently removed
-- **Shared x-axis** across all panels; supports **negative relative days** (measurements before the reference date); protocol timepoint reference lines on every panel
+- **Treatments grouped by drug class**: rows are ordered by class (earliest class start first), with duplicate segments silently removed
+- **Shared x-axis** across all panels; supports **negative relative days** (measurements before day 0); optional protocol timepoint reference lines on every panel
 - Every visual element is configurable: colours, shapes, axis ranges, BDL floor, label sizes, bar heights, panel heights, and more
 - Reads from **Excel** (absolute dates → relative days computed automatically) or from **pre-processed data frames / CSV files**
 
@@ -82,6 +82,22 @@ save_clinical_figure(fig, "figure.svg", width = 14, height = 16)
 
 ---
 
+## Real-data example
+
+The repository includes a complete worked example based on a published case report
+([`example.R`](example.R), data in [`casereport_3/`](casereport_3/)).
+The figure below was produced by `example.R` from the original hospital Excel exports.
+
+```r
+source("example.R")
+```
+
+The input files follow the standard Excel format described below:
+`casereport_3/labvals_HS.xlsx` (one row per lab measurement, absolute dates)
+and `casereport_3/treatment_HS.xlsx` (one row per treatment segment, absolute start/end dates).
+
+---
+
 ## Input data
 
 ### Lab values
@@ -95,7 +111,11 @@ cases <- list(
   list(id = "Case 1", ref_date = "2025-06-03"),
   list(id = "Case 2", ref_date = "2025-08-12")
 )
+# File has separate date and time columns (default)
 lab <- load_lab_data("labvals.xlsx", cases)
+
+# File has a combined datetime column; no separate time column
+lab <- load_lab_data("labvals.xlsx", cases, col_time = NULL)
 ```
 
 **From CSV / data frame** (relative days already computed):
