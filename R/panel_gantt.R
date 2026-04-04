@@ -42,6 +42,9 @@
 #' @param show_class_labels Logical. Draw class name labels to the right of
 #'   each class group when `group_by_class = TRUE`. Default: `TRUE`.
 #' @param class_label_size Numeric. Text size for class labels. Default: `2.5`.
+#' @param class_label_margin Numeric. Extra right margin (in pt) added to the
+#'   panel when class labels are shown, to prevent them being clipped by the
+#'   figure boundary. Default: `60`.
 #' @param nord Named list with `$dark`, `$muted`, `$grid` (hex colours).
 #'   Default: Nord palette.
 #' @param base_size Numeric. Base font size. Default: `9`.
@@ -76,9 +79,10 @@ make_gantt_panel <- function(
     label_nudge_x     = -1,
     x_label           = "Days from diagnosis",
     x_breaks_step     = 50,
-    group_by_class    = TRUE,
-    show_class_labels = TRUE,
-    class_label_size  = 2.5,
+    group_by_class      = TRUE,
+    show_class_labels   = TRUE,
+    class_label_size    = 2.5,
+    class_label_margin  = 60,
     nord              = NULL,
     base_size         = 9,
     title_size        = 9,
@@ -197,33 +201,7 @@ make_gantt_panel <- function(
       color = nord$dark
     )
 
-  # ---- Class separators and labels -------------------------------------------
-  if (has_class && length(sep_y) > 0L) {
-    p <- p + geom_hline(
-      yintercept = sep_y,
-      color      = nord$muted,
-      linewidth  = 0.3,
-      linetype   = "solid",
-      alpha      = 0.4
-    )
-  }
-
-  if (has_class && show_class_labels) {
-    x_label_pos <- x_range[[2]]
-    p <- p + geom_text(
-      data    = class_groups,
-      mapping = aes(
-        x     = x_label_pos,
-        y     = .data$y_mid,
-        label = .data$CLASS
-      ),
-      hjust       = -0.1,
-      size        = class_label_size,
-      color       = nord$muted,
-      fontface    = "italic",
-      inherit.aes = FALSE
-    )
-  }
+  # CLASS grouping is used only for row ordering; no visual separators or labels
 
   p <- p +
     scale_x_continuous(
@@ -246,7 +224,8 @@ make_gantt_panel <- function(
       axis.text.y        = element_blank(),
       axis.ticks.y       = element_blank(),
       axis.title.y       = element_blank(),
-      panel.grid.major.y = element_blank()
+      panel.grid.major.y = element_blank(),
+      plot.margin        = margin(3, 5, 3, 5)
     )
 
   if (!is.null(case_label)) {

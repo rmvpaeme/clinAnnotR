@@ -2,6 +2,8 @@
 
 <p align="center"><img src="man/figures/logo.png" width="180" alt="clinAnnotR hex logo"/></p>
 
+Disclaimer: I manually built the layout of the figure, and I asked claude code to turn this layout into an R package.
+
 R package for generating publication-quality multi-panel clinical figures that combine **any numerical laboratory time-series** with per-case **treatment Gantt charts**.
 
 ![Example figure](figure_combined_example.png)
