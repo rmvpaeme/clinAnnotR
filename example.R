@@ -1,28 +1,101 @@
 # example.R
-# Reproduces the clinical timeline figure for the published HS case report
-# using the clinAnnotR package.
-#
-# Input files (example_casereport/):
-#   labvals.xlsx   — lab measurements (case_id, relday, parameter, value)
-#   treatment.xlsx — treatment segments (case_id, TREATMENT, START_rel, END_rel, COLOR, CLASS)
-#
-# Day 0 = HS diagnosis.
+# Demonstrates all data loading paths in clinAnnotR using the built-in
+# example data in inst/extdata/. Run from the package root directory.
 
 devtools::load_all(".")
 library(readxl)
 
-# ---- Load data -------------------------------------------------------------
+# ============================================================
+# 1. Built-in example data (fictional, two cases)
+#    Loaded via example_data() — no files needed
+# ============================================================
 
-lab <- prep_lab_data(read_excel("example_casereport/labvals.xlsx"))
-tx  <- prep_treatment_data(read_excel("example_casereport/treatment.xlsx"))
+lab <- example_data("lab")
+tx  <- example_data("treatment")
 
-# ---- Panel definitions -----------------------------------------------------
-# Panel layout matches the published figure:
-#   Panel 1 (log10): haematology + inflammatory markers (high dynamic range)
-#   Panel 2 (linear): CRP, platelets, triglycerides
-#   Panel 3 (linear): haemoglobin, total bilirubin
+panels_2case <- list(
+  lab_panel(
+    line_params   = "WBC (/µL)",
+    point_params  = "peripheral blasts (/µL)",
+    y_label       = "Count (/µL)",
+    height_weight = 4
+  ),
+  lab_panel(
+    point_params  = "BM blasts with IF (%)",
+    show_labels   = TRUE,
+    label_suffix  = "%",
+    y_limits      = c(0.05, 200),
+    y_breaks      = c(0.1, 1, 5, 20, 100),
+    y_labels      = paste0(c(0.1, 1, 5, 20, 100), "%"),
+    y_label       = "BM blasts (%)",
+    height_weight = 3
+  )
+)
 
-panels <- list(
+fig_builtin <- make_clinical_figure(
+  lab_data       = lab,
+  treatment_data = tx,
+  lab_panels     = panels_2case,
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49)
+)
+save_clinical_figure(fig_builtin, "inst/extdata/example_figure.pdf")
+save_clinical_figure(fig_builtin, "inst/extdata/example_figure.png", dpi = 150)
+message("1. Built-in example: OK")
+
+# ============================================================
+# 2. Relative-day Excel (inst/extdata/example_labvals.xlsx)
+#    Standard format — same data as above, from file
+# ============================================================
+
+lab_rel <- prep_lab_data(read_excel("inst/extdata/example_labvals.xlsx"))
+tx_rel  <- prep_treatment_data(read_excel("inst/extdata/example_treatment.xlsx"))
+
+fig_rel <- make_clinical_figure(
+  lab_data       = lab_rel,
+  treatment_data = tx_rel,
+  lab_panels     = panels_2case,
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49)
+)
+message("2. Relative-day xlsx: OK (", nrow(lab_rel), " lab rows, ",
+        nrow(tx_rel), " tx rows)")
+
+# ============================================================
+# 3. Absolute-date Excel (inst/extdata/example_labvals_dates.xlsx)
+#    Reference dates per case; load_lab_data() computes relday
+# ============================================================
+
+cases <- list(
+  list(id = "Case 1", ref_date = "2025-01-01"),
+  list(id = "Case 2", ref_date = "2025-03-15")
+)
+
+lab_abs <- load_lab_data(
+  "inst/extdata/example_labvals_dates.xlsx",
+  cases
+)
+tx_abs <- load_treatment_data(
+  "inst/extdata/example_treatment_dates.xlsx",
+  cases
+)
+
+fig_abs <- make_clinical_figure(
+  lab_data       = lab_abs,
+  treatment_data = tx_abs,
+  lab_panels     = panels_2case,
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49)
+)
+message("3. Absolute-date xlsx: OK (relday range ",
+        round(min(lab_abs$relday), 1), " to ", round(max(lab_abs$relday), 1), ")")
+
+# ============================================================
+# 4. Published HS case report (example_casereport/)
+#    Single case, multiple parameter panels, log + linear mix
+# ============================================================
+
+lab_hs <- prep_lab_data(read_excel("example_casereport/labvals.xlsx"))
+tx_hs  <- prep_treatment_data(read_excel("example_casereport/treatment.xlsx"))
+
+panels_hs <- list(
   lab_panel(
     line_params   = c("ALT (U/L)", "ferritin (µg/L)", "fibrinogen (mg/dL)",
                       "neutrophils (/µL)", "WBC (/µL)"),
@@ -44,16 +117,15 @@ panels <- list(
   )
 )
 
-# ---- Assemble and save -----------------------------------------------------
-
-fig <- make_clinical_figure(
-  lab_data       = lab,
-  treatment_data = tx,
-  lab_panels     = panels,
+fig_hs <- make_clinical_figure(
+  lab_data       = lab_hs,
+  treatment_data = tx_hs,
+  lab_panels     = panels_hs,
   x_range        = c(-5, 55),
   highlight_days = NULL
 )
+save_clinical_figure(fig_hs, "example_casereport/figure.pdf")
+save_clinical_figure(fig_hs, "example_casereport/figure.png", dpi = 300)
+message("4. Published HS case: OK")
 
-save_clinical_figure(fig, "example_casereport/figure.pdf")
-save_clinical_figure(fig, "example_casereport/figure.png", dpi = 300)
-message("Figure saved to example_casereport/")
+message("\nAll examples completed successfully.")
