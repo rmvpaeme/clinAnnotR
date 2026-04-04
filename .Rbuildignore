@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^data-raw$
+^README\.Rmd$
+^\.github$
+^figure_combined\.R$
+^figure_combined_example\.R$
+^figure_combined_example\.png$
+^example_labvals\.csv$
+^example_treatment\.csv$

@@ -1,0 +1,35 @@
+Package: clinAnnotR
+Title: Publication-Quality Clinical Time-Series Figures
+Version: 0.1.0
+Authors@R:
+    person("Given", "Family", , "given.family@example.com", role = c("aut", "cre"))
+Description: Generates multi-panel figures combining arbitrary numerical
+    laboratory time-series with per-case treatment Gantt charts. Any parameter
+    can be displayed as a line or point series on log10 or linear scales, with
+    below-detection-limit handling and optional direct value labels. Every
+    visual element—colours, shapes, axis ranges, BDL floor, and layout—is
+    configurable through function arguments.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Depends:
+    R (>= 4.1.0)
+Imports:
+    ggplot2 (>= 3.4.0),
+    ggrepel (>= 0.9.0),
+    patchwork (>= 1.2.0),
+    scales (>= 1.3.0),
+    readxl (>= 1.4.0),
+    dplyr (>= 1.1.0),
+    tibble (>= 3.2.0),
+    rlang (>= 1.1.0),
+    tools
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Config/testthat/edition: 3
+VignetteBuilder: knitr
+URL: https://github.com/rmvpaeme/clinAnnotR
+BugReports: https://github.com/rmvpaeme/clinAnnotR/issues

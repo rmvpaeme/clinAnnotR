@@ -1,0 +1,51 @@
+case_id,relday,parameter,value
+Case 1,0,WBC (/µL),48500
+Case 1,7,WBC (/µL),9200
+Case 1,14,WBC (/µL),3100
+Case 1,22,WBC (/µL),4400
+Case 1,29,WBC (/µL),5200
+Case 1,49,WBC (/µL),2800
+Case 1,70,WBC (/µL),3600
+Case 1,100,WBC (/µL),4800
+Case 1,140,WBC (/µL),6200
+Case 1,185,WBC (/µL),7100
+Case 1,0,peripheral blasts (/µL),19400
+Case 1,7,peripheral blasts (/µL),740
+Case 1,14,peripheral blasts (/µL),<100
+Case 1,22,peripheral blasts (/µL),<100
+Case 1,29,peripheral blasts (/µL),<100
+Case 1,49,peripheral blasts (/µL),<100
+Case 1,70,peripheral blasts (/µL),<100
+Case 1,100,peripheral blasts (/µL),180
+Case 1,140,peripheral blasts (/µL),620
+Case 1,185,peripheral blasts (/µL),2100
+Case 1,0,BM blasts with IF (%),74
+Case 1,22,BM blasts with IF (%),38
+Case 1,49,BM blasts with IF (%),<5
+Case 1,100,BM blasts with IF (%),8
+Case 1,185,BM blasts with IF (%),52
+Case 2,0,WBC (/µL),27300
+Case 2,7,WBC (/µL),5800
+Case 2,14,WBC (/µL),2400
+Case 2,22,WBC (/µL),3200
+Case 2,29,WBC (/µL),3900
+Case 2,49,WBC (/µL),2300
+Case 2,70,WBC (/µL),3700
+Case 2,100,WBC (/µL),4200
+Case 2,140,WBC (/µL),5600
+Case 2,185,WBC (/µL),8400
+Case 2,0,peripheral blasts (/µL),10900
+Case 2,7,peripheral blasts (/µL),290
+Case 2,14,peripheral blasts (/µL),<100
+Case 2,22,peripheral blasts (/µL),<100
+Case 2,29,peripheral blasts (/µL),<100
+Case 2,49,peripheral blasts (/µL),<100
+Case 2,70,peripheral blasts (/µL),130
+Case 2,100,peripheral blasts (/µL),480
+Case 2,140,peripheral blasts (/µL),1350
+Case 2,185,peripheral blasts (/µL),3800
+Case 2,0,BM blasts with IF (%),58
+Case 2,22,BM blasts with IF (%),12
+Case 2,49,BM blasts with IF (%),<5
+Case 2,100,BM blasts with IF (%),22
+Case 2,185,BM blasts with IF (%),65
