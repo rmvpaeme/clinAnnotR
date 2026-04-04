@@ -2,30 +2,19 @@
 # Reproduces the clinical timeline figure for the published HS case report
 # using the clinAnnotR package.
 #
-# Reference: [published case report citation]
-# Reference date (day 0): 2025-01-08 (HS diagnosis)
-# Data: casereport_3/labvals_HS.xlsx, casereport_3/treatment_HS.xlsx
+# Input files (example_casereport/):
+#   labvals.xlsx   — lab measurements (case_id, relday, parameter, value)
+#   treatment.xlsx — treatment segments (case_id, TREATMENT, START_rel, END_rel, COLOR, CLASS)
+#
+# Day 0 = HS diagnosis.
 
 devtools::load_all(".")
-
-# ---- Case definition -------------------------------------------------------
-
-cases <- list(
-  list(id = "Case 1", ref_date = "2025-01-08")
-)
+library(readxl)
 
 # ---- Load data -------------------------------------------------------------
 
-lab <- load_lab_data(
-  "casereport_3/labvals_HS.xlsx",
-  cases,
-  col_time = NULL   # datetime already combined in the date column
-)
-
-tx <- load_treatment_data(
-  "casereport_3/treatment_HS.xlsx",
-  cases
-)
+lab <- prep_lab_data(read_excel("example_casereport/labvals.xlsx"))
+tx  <- prep_treatment_data(read_excel("example_casereport/treatment.xlsx"))
 
 # ---- Panel definitions -----------------------------------------------------
 # Panel layout matches the published figure:
@@ -55,7 +44,7 @@ panels <- list(
   )
 )
 
-# ---- Assemble figure -------------------------------------------------------
+# ---- Assemble and save -----------------------------------------------------
 
 fig <- make_clinical_figure(
   lab_data       = lab,
@@ -65,8 +54,6 @@ fig <- make_clinical_figure(
   highlight_days = NULL
 )
 
-# ---- Save ------------------------------------------------------------------
-
-save_clinical_figure(fig, "casereport_3/figure_HS.pdf")
-save_clinical_figure(fig, "casereport_3/figure_HS.png", dpi = 150)
-message("HS case report figure saved.")
+save_clinical_figure(fig, "example_casereport/figure.pdf")
+save_clinical_figure(fig, "example_casereport/figure.png", dpi = 300)
+message("Figure saved to example_casereport/")
