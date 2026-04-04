@@ -87,45 +87,5 @@ fig_abs <- make_clinical_figure(
 message("3. Absolute-date xlsx: OK (relday range ",
         round(min(lab_abs$relday), 1), " to ", round(max(lab_abs$relday), 1), ")")
 
-# ============================================================
-# 4. Published HS case report (example_casereport/)
-#    Single case, multiple parameter panels, log + linear mix
-# ============================================================
-
-lab_hs <- prep_lab_data(read_excel("example_casereport/labvals.xlsx"))
-tx_hs  <- prep_treatment_data(read_excel("example_casereport/treatment.xlsx"))
-
-panels_hs <- list(
-  lab_panel(
-    line_params   = c("ALT (U/L)", "ferritin (µg/L)", "fibrinogen (mg/dL)",
-                      "neutrophils (/µL)", "WBC (/µL)"),
-    y_scale       = "log10",
-    y_label       = "",
-    height_weight = 4
-  ),
-  lab_panel(
-    line_params   = c("CRP (mg/L)", "platelets (10E3/µL)", "triglycerides (mg/dL)"),
-    y_scale       = "linear",
-    y_label       = "",
-    height_weight = 3
-  ),
-  lab_panel(
-    line_params   = c("hemoglobin (g/dL)", "total bilirubin (mg/dL)"),
-    y_scale       = "linear",
-    y_label       = "",
-    height_weight = 3
-  )
-)
-
-fig_hs <- make_clinical_figure(
-  lab_data       = lab_hs,
-  treatment_data = tx_hs,
-  lab_panels     = panels_hs,
-  x_range        = c(-5, 55),
-  highlight_days = NULL
-)
-save_clinical_figure(fig_hs, "example_casereport/figure.pdf")
-save_clinical_figure(fig_hs, "example_casereport/figure.png", dpi = 300)
-message("4. Published HS case: OK")
-
 message("\nAll examples completed successfully.")
+message("For the published HS case figure, run: source('example_casereport.R')")
