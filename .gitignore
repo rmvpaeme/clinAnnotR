@@ -7,9 +7,11 @@ Thumbs.db
 *.pdf
 Rplot*
 *.xlsx
+!inst/extdata/*.xlsx
 example_casereport/*
 !example_casereport/labvals.xlsx
 !example_casereport/treatment.xlsx
+!example_casereport/figure.png
 figure_combined_example.R
 CLAUDE.md
 casereport_1/
