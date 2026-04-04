@@ -28,19 +28,21 @@
 #'   Default: `c(-5, 190)`.
 #' @param show_x Logical. Show x-axis text, title, and ticks? Default: `FALSE`.
 #' @param nord Named list with elements `$dark`, `$muted`, `$grid` (hex
-#'   colours). Use [.nord_defaults()] or pass your own. Default: Nord palette.
+#'   colours). Pass your own or leave `NULL` to use the package Nord palette.
 #' @param base_size Numeric. Base font size. Default: `9`.
 #'
 #' @return A [ggplot2::ggplot()] object.
 #'
 #' @examples
+#' \donttest{
 #' lab <- example_data("lab")
 #' spec <- lab_panel(
-#'   line_params  = "WBC (/\u00b5L)",
-#'   point_params = "peripheral blasts (/\u00b5L)",
-#'   y_label      = "Count (/\u00b5L)"
+#'   line_params  = "WBC (/µL)",
+#'   point_params = "peripheral blasts (/µL)",
+#'   y_label      = "Count (/µL)"
 #' )
 #' make_timeseries_panel(lab, spec)
+#' }
 #'
 #' @export
 make_timeseries_panel <- function(
@@ -295,7 +297,7 @@ make_timeseries_panel <- function(
     ghost_df <- data.frame(
       relday    = -99999,
       value_num = y_lims[[1]],
-      bdl_label = "BDL (\u2207)",
+      bdl_label = "BDL",
       stringsAsFactors = FALSE
     )
     p <- p + geom_point(
@@ -326,7 +328,7 @@ make_timeseries_panel <- function(
   if (!single_case) {
     all_shapes <- c(
       if (has_det)  point_shapes_det[point_params],
-      if (has_bdl)  c("BDL (\u2207)" = bdl_shape)
+      if (has_bdl)  c("BDL" = bdl_shape)
     )
     if (length(all_shapes) > 0L) {
       p <- p + scale_shape_manual(
@@ -342,7 +344,7 @@ make_timeseries_panel <- function(
     # Single-case: only the BDL ghost needs a shape entry
     p <- p + scale_shape_manual(
       name   = NULL,
-      values = c("BDL (\u2207)" = bdl_shape),
+      values = c("BDL" = bdl_shape),
       guide  = guide_legend(
         order        = 2,
         override.aes = list(colour = nord$dark)

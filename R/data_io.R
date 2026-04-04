@@ -25,7 +25,7 @@
 #'   Pass `NULL` if time information is embedded in `col_date` or not available;
 #'   midnight (00:00:00) is then assumed. Default: `"time"`.
 #' @param bdl_floor Numeric. Floor value applied to BDL and zero observations
-#'   so they can be plotted on a log\u2081\u2080 axis. Default: `0.1`.
+#'   so they can be plotted on a log10 axis. Default: `0.1`.
 #' @param label_digits Integer. Rounding digits for numeric value labels shown
 #'   on plot points. Default: `1`.
 #' @param tz Character. Time zone for all date-time arithmetic. Default: `"UTC"`.

@@ -48,9 +48,9 @@
 #'
 #' panels <- list(
 #'   lab_panel(
-#'     line_params   = "WBC (/\u00b5L)",
-#'     point_params  = "peripheral blasts (/\u00b5L)",
-#'     y_label       = "Count (/\u00b5L)",
+#'     line_params   = "WBC (/µL)",
+#'     point_params  = "peripheral blasts (/µL)",
+#'     y_label       = "Count (/µL)",
 #'     height_weight = 4
 #'   ),
 #'   lab_panel(
@@ -181,7 +181,7 @@ make_clinical_figure <- function(
     if (!is.null(highlight_days))
       paste0("Dashed lines: ", paste(names(highlight_days), collapse = "/"),
              ". "),
-    "BDL\u00a0=\u00a0below detection limit."
+    "BDL = below detection limit."
   )
 
   stacked +

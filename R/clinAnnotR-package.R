@@ -3,7 +3,7 @@
 #' @description
 #' Generates multi-panel figures combining arbitrary numerical laboratory
 #' time-series with per-case treatment Gantt charts. Any parameter can be
-#' displayed as a line or point series on log\u2081\u2080 or linear scales,
+#' displayed as a line or point series on log10 or linear scales,
 #' with below-detection-limit (BDL) handling and optional direct value labels.
 #'
 #' ## Typical workflow
@@ -15,9 +15,9 @@
 #'
 #' # 2. Define panels
 #' panels <- list(
-#'   lab_panel(line_params  = "WBC (/\u00b5L)",
-#'             point_params = "peripheral blasts (/\u00b5L)",
-#'             y_label      = "Count (/\u00b5L)"),
+#'   lab_panel(line_params  = "WBC (/µL)",
+#'             point_params = "peripheral blasts (/µL)",
+#'             y_label      = "Count (/µL)"),
 #'   lab_panel(point_params = "BM blasts with IF (%)",
 #'             show_labels  = TRUE, label_suffix = "%",
 #'             y_label      = "BM blasts (%)")
@@ -52,6 +52,7 @@
 #' @importFrom readxl read_excel
 #' @importFrom rlang .data
 #' @importFrom scales cut_short_scale label_number
+#' @importFrom stats setNames
 #' @importFrom tools file_ext
 ## usethis namespace: end
 NULL

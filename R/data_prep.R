@@ -27,7 +27,7 @@
 #' raw <- data.frame(
 #'   case_id   = c("Case 1", "Case 1", "Case 2"),
 #'   relday    = c(0, 22, 0),
-#'   parameter = c("Hemoglobin (g/dL)", "Hemoglobin (g/dL)", "WBC (/\u00b5L)"),
+#'   parameter = c("Hemoglobin (g/dL)", "Hemoglobin (g/dL)", "WBC (/µL)"),
 #'   value     = c("10.5", "<8", "27300")
 #' )
 #' prep_lab_data(raw)

@@ -19,7 +19,7 @@
 #'   `case_id`). Columns required: `TREATMENT`, `START_rel`, `END_rel`,
 #'   `COLOR`. Column `CLASS` is required when `group_by_class = TRUE`.
 #' @param case_label Character. Panel title shown above the chart (e.g.
-#'   `"Case 1 \u2014 treatments"`). Default: `NULL` (no title).
+#'   `"Case 1 — treatments"`). Default: `NULL` (no title).
 #' @param highlight_days Named numeric vector of reference line positions
 #'   (dashed vertical lines). `NULL` suppresses lines. Default: `NULL`.
 #' @param x_range Numeric length-2. x-axis limits in days. `NULL` = auto
@@ -60,7 +60,7 @@
 #' tx <- example_data("treatment")
 #' make_gantt_panel(
 #'   tx[tx$case_id == "Case 1", ],
-#'   case_label     = "Case 1 \u2014 treatments",
+#'   case_label     = "Case 1 — treatments",
 #'   highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49),
 #'   x_range        = c(-5, 190),
 #'   show_x         = TRUE

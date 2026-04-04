@@ -35,7 +35,7 @@
 #'   percentage parameters). Default: `""`.
 #' @param label_size Numeric text size for value labels. Default: `2.8`.
 #' @param label_nudge_y Numeric. `nudge_y` for detected-value labels (additive
-#'   on the log\u2081\u2080 scale when `y_scale = "log10"`). Default: `0.18`.
+#'   on the log10 scale when `y_scale = "log10"`). Default: `0.18`.
 #' @param label_nudge_y_bdl Numeric. `nudge_y` for BDL labels. Default: `-0.25`.
 #' @param label_segment_size Numeric. Width of the ggrepel connector segment.
 #'   Default: `0.3`.
@@ -50,9 +50,9 @@
 #' @param point_size Numeric. Size of detected (non-BDL) point geometries.
 #'   Default: `2.5`.
 #' @param bdl_shape Integer. ggplot2 shape code for BDL points. Shape `6` is an
-#'   open downward-pointing triangle (\u2207). Default: `6L`.
+#'   open downward-pointing triangle (∇). Default: `6L`.
 #' @param bdl_size Numeric. Size of BDL points. Default: `2.5`.
-#' @param logticks Logical. Annotate log\u2081\u2080 panels with minor log ticks
+#' @param logticks Logical. Annotate log10 panels with minor log ticks
 #'   on the left axis ([ggplot2::annotation_logticks()])? Default: `TRUE`.
 #' @param height_weight Positive numeric. Relative panel height in the assembled
 #'   figure (passed to [patchwork::plot_layout()]). Default: `3`.
@@ -62,9 +62,9 @@
 #' @examples
 #' # WBC line + peripheral blast points on a shared log10 count axis
 #' lab_panel(
-#'   line_params  = "WBC (/\u00b5L)",
-#'   point_params = "peripheral blasts (/\u00b5L)",
-#'   y_label      = "Count (/\u00b5L)",
+#'   line_params  = "WBC (/µL)",
+#'   point_params = "peripheral blasts (/µL)",
+#'   y_label      = "Count (/µL)",
 #'   height_weight = 4
 #' )
 #'
@@ -157,6 +157,21 @@ lab_panel <- function(
   spec
 }
 
+#' Print a lab panel specification
+#'
+#' Compact summary of a `lab_panel_spec` object showing the most important
+#' fields: y-axis scale, label, the parameters assigned to lines and points,
+#' whether value labels are enabled, and the relative panel height.
+#'
+#' @param x A `lab_panel_spec` object created by [lab_panel()].
+#' @param ... Ignored; present for S3 method compatibility.
+#'
+#' @return `x`, invisibly.
+#'
+#' @examples
+#' spec <- lab_panel(line_params = "WBC (/µL)", y_label = "Count (/µL)")
+#' print(spec)
+#'
 #' @export
 print.lab_panel_spec <- function(x, ...) {
   cat("<lab_panel_spec>\n")

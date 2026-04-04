@@ -27,7 +27,7 @@
 #' tx  <- example_data("treatment")
 #' fig <- make_clinical_figure(
 #'   lab, tx,
-#'   lab_panels = list(lab_panel(line_params = "WBC (/\u00b5L)"))
+#'   lab_panels = list(lab_panel(line_params = "WBC (/µL)"))
 #' )
 #' save_clinical_figure(fig, "figure.pdf")
 #' save_clinical_figure(fig, "figure.png", dpi = 150)
