@@ -2,6 +2,7 @@
 Thumbs.db
 *.png
 !figure_combined_example.png
+!man/figures/logo.png
 *.svg
 *.pdf
 Rplot*
