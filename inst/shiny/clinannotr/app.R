@@ -148,9 +148,9 @@ ui <- fluidPage(
         column(6,
           wellPanel(
             h4("Lab Data (required)"),
-            fileInput("lab_file", NULL,
-                      label    = "Upload Excel file",
-                      accept   = c(".xlsx", ".xls"),
+            fileInput("lab_file",
+                      label       = "Upload Excel file",
+                      accept      = c(".xlsx", ".xls"),
                       buttonLabel = "Browse…"),
             numericInput("lab_sheet", "Sheet number", value = 1, min = 1),
             conditionalPanel("output.lab_cols_ready",
@@ -171,7 +171,7 @@ ui <- fluidPage(
         column(6,
           wellPanel(
             h4("Treatment Data (optional)"),
-            fileInput("trt_file", NULL,
+            fileInput("trt_file",
                       label       = "Upload Excel file",
                       accept      = c(".xlsx", ".xls"),
                       buttonLabel = "Browse…"),
