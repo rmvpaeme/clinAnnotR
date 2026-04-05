@@ -13,6 +13,7 @@ make_clinical_figure(
   case_shapes = NULL,
   x_range = NULL,
   highlight_days = NULL,
+  shade_regions = NULL,
   gantt_height_weight = NULL,
   caption = NULL,
   caption_size = 7,
@@ -49,6 +50,23 @@ every panel. \code{NULL} = auto-computed as \code{c(min(relday) - 5, max(relday)
 on \strong{every} panel (e.g. \code{c("D1" = 1, "D22" = 22, "D49" = 49)}).
 Individual lab panels can override this via \code{\link[=lab_panel]{lab_panel()}}'s
 \code{highlight_days} argument. \code{NULL} = no reference lines. Default: \code{NULL}.}
+
+\item{shade_regions}{Named list of background shading regions, one entry per
+case ID. Each entry is a list of region specs, where each spec is a list
+with \code{xmin}, \code{xmax}, \code{fill}, and optional \code{alpha} (default \code{0.15}).
+Regions are drawn behind all data layers on every lab panel \strong{and} on the
+corresponding Gantt panel. \code{NULL} (default) draws no shading.
+
+Example (one case, three treatment phases):
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{shade_regions = list(
+  "Case 1" = list(
+    list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+    list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15),
+    list(xmin = 43, xmax = 53, fill = "#B48EAD", alpha = 0.20)
+  )
+)
+}\if{html}{\out{</div>}}}
 
 \item{gantt_height_weight}{Positive numeric or \code{NULL}. Relative height of
 each Gantt panel in the patchwork stack. When \code{NULL} (default), the height

@@ -27,6 +27,20 @@
 #' @param x_range Numeric vector of length 2. x-axis limits in days.
 #'   Default: `c(-5, 190)`.
 #' @param show_x Logical. Show x-axis text, title, and ticks? Default: `FALSE`.
+#' @param shade_regions A list of background shading rectangles drawn behind
+#'   all data layers. Each element is a named list with:
+#'   * `xmin`, `xmax` — start and end in relative days
+#'   * `fill` — hex fill colour (e.g. `"#BF616A"`)
+#'   * `alpha` — fill transparency (default `0.15`)
+#'
+#'   Example:
+#'   ```r
+#'   list(
+#'     list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+#'     list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15)
+#'   )
+#'   ```
+#'   `NULL` (default) draws no regions.
 #' @param nord Named list with elements `$dark`, `$muted`, `$grid` (hex
 #'   colours). Pass your own or leave `NULL` to use the package Nord palette.
 #' @param base_size Numeric. Base font size. Default: `9`.
@@ -54,6 +68,7 @@ make_timeseries_panel <- function(
     point_shapes_det = NULL,
     x_range          = c(-5, 190),
     show_x           = FALSE,
+    shade_regions    = NULL,
     nord             = NULL,
     base_size        = 9
 ) {
@@ -140,6 +155,31 @@ make_timeseries_panel <- function(
       linewidth = 0.4,
       alpha     = 0.5
     )
+
+  # ---- Background shading regions --------------------------------------------
+  # Use actual y_lims (not -Inf/Inf) so shading renders correctly on log10 scale
+  if (!is.null(shade_regions) && length(shade_regions) > 0L) {
+    shade_df <- do.call(rbind, lapply(shade_regions, function(reg) {
+      data.frame(
+        xmin  = reg$xmin,
+        xmax  = reg$xmax,
+        ymin  = y_lims[[1]],
+        ymax  = y_lims[[2]],
+        fill  = reg$fill,
+        alpha = if (!is.null(reg$alpha)) reg$alpha else 0.15,
+        stringsAsFactors = FALSE
+      )
+    }))
+    p <- p + geom_rect(
+      data    = shade_df,
+      mapping = aes(
+        xmin = .data$xmin, xmax = .data$xmax,
+        ymin = .data$ymin, ymax = .data$ymax,
+        fill = .data$fill, alpha = .data$alpha
+      ),
+      inherit.aes = FALSE
+    ) + scale_fill_identity() + scale_alpha_identity()
+  }
 
   # ---- Line layers -----------------------------------------------------------
   if (has_lines) {

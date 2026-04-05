@@ -14,6 +14,7 @@ Rplot*
 # Excel files — allow inst/extdata/ and example_casereport/ only
 *.xlsx
 !inst/extdata/*.xlsx
+!inst/extdata/example_figure.png
 !example_casereport/*.xlsx
 
 # Private case data (real patient data, not for public repo)

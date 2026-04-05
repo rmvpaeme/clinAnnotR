@@ -176,7 +176,9 @@ make_gantt_panel <- function(
       color      = nord$muted,
       linewidth  = vline_linewidth,
       alpha      = vline_alpha
-    ) +
+    )
+
+  p <- p +
     geom_rect(
       data    = plot_data,
       mapping = aes(

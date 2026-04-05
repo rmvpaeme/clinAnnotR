@@ -13,6 +13,7 @@ make_timeseries_panel(
   point_shapes_det = NULL,
   x_range = c(-5, 190),
   show_x = FALSE,
+  shade_regions = NULL,
   nord = NULL,
   base_size = 9
 )
@@ -41,6 +42,24 @@ ggplot2 shape codes for detected (non-BDL) points. Auto-assigned if \code{NULL}.
 Default: \code{c(-5, 190)}.}
 
 \item{show_x}{Logical. Show x-axis text, title, and ticks? Default: \code{FALSE}.}
+
+\item{shade_regions}{A list of background shading rectangles drawn behind
+all data layers. Each element is a named list with:
+\itemize{
+\item \code{xmin}, \code{xmax} — start and end in relative days
+\item \code{fill} — hex fill colour (e.g. \code{"#BF616A"})
+\item \code{alpha} — fill transparency (default \code{0.15})
+}
+
+Example:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{list(
+  list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+  list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15)
+)
+}\if{html}{\out{</div>}}
+
+\code{NULL} (default) draws no regions.}
 
 \item{nord}{Named list with elements \verb{$dark}, \verb{$muted}, \verb{$grid} (hex
 colours). Pass your own or leave \code{NULL} to use the package Nord palette.}

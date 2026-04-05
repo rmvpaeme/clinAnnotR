@@ -35,6 +35,22 @@
 #' @param caption Character. Caption shown below the figure. `NULL` = a
 #'   built-in default mentioning protocol timepoints and BDL. Default: `NULL`.
 #' @param caption_size Numeric. Caption font size. Default: `7`.
+#' @param shade_regions Named list of background shading regions, one entry per
+#'   case ID. Each entry is a list of region specs, where each spec is a list
+#'   with `xmin`, `xmax`, `fill`, and optional `alpha` (default `0.15`).
+#'   Regions are drawn behind all data layers on every lab panel **and** on the
+#'   corresponding Gantt panel. `NULL` (default) draws no shading.
+#'
+#'   Example (one case, three treatment phases):
+#'   ```r
+#'   shade_regions = list(
+#'     "Case 1" = list(
+#'       list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+#'       list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15),
+#'       list(xmin = 43, xmax = 53, fill = "#B48EAD", alpha = 0.20)
+#'     )
+#'   )
+#'   ```
 #' @param nord Named list with `$dark`, `$muted`, `$grid` (hex colours).
 #'   `NULL` = built-in Nord palette. Default: `NULL`.
 #' @param base_size Numeric. Base font size applied to all panels. Default: `9`.
@@ -85,6 +101,7 @@ make_clinical_figure <- function(
     case_shapes         = NULL,
     x_range             = NULL,
     highlight_days      = NULL,
+    shade_regions       = NULL,
     gantt_height_weight = NULL,
     caption             = NULL,
     caption_size        = 7,
@@ -125,6 +142,11 @@ make_clinical_figure <- function(
 
     is_last <- (n_gantt == 0L) && (i == n_lab)
 
+    # Flatten shade regions across all cases for shared timeseries panels
+    panel_shade <- if (!is.null(shade_regions)) {
+      unlist(shade_regions, recursive = FALSE)
+    } else NULL
+
     lab_plots[[i]] <- make_timeseries_panel(
       lab_data         = lab_data,
       spec             = spec,
@@ -134,6 +156,7 @@ make_clinical_figure <- function(
       point_shapes_det = global_pt_shapes,
       x_range          = x_range,
       show_x           = is_last,
+      shade_regions    = panel_shade,
       nord             = nord,
       base_size        = base_size
     )

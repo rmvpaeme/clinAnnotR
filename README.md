@@ -22,7 +22,7 @@ R package for generating publication-quality multi-panel clinical figures that c
 - **Treatment Gantt charts** with multi-segment bars (repeated cycles), custom colours, and drug name labels
 - **Gantt height auto-scaled** per case based on number of treatment rows (`max(1.5, n_treatments × 0.4)`)
 - **Drug class grouping**: rows ordered by class (earliest class start first); duplicate segments silently removed
-- **Shared x-axis**; supports **negative relative days** (measurements before day 0); optional vertical reference lines
+- **Shared x-axis**; supports **negative relative days** (measurements before day 0); optional vertical reference lines and **per-case background shading regions** (e.g. treatment phases)
 - Every visual element configurable: colours, shapes, axis ranges, BDL floor, label sizes, bar heights, and more
 
 ---
@@ -244,8 +244,26 @@ fig <- make_clinical_figure(
   case_shapes         = NULL,     # NULL = auto
   x_range             = NULL,     # NULL = auto (data range ± 5 days)
   highlight_days      = NULL,     # named numeric vector of reference lines
+  shade_regions       = NULL,     # named list of background rectangles per case
   gantt_height_weight = NULL,     # NULL = auto per case; or fixed number
   base_size           = 9
+)
+```
+
+**Background shading per case** (drawn on all lab panels):
+
+```r
+fig <- make_clinical_figure(
+  lab, tx, panels,
+  shade_regions = list(
+    "Case 1" = list(
+      list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+      list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15)
+    ),
+    "Case 2" = list(
+      list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15)
+    )
+  )
 )
 ```
 

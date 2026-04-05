@@ -43,6 +43,20 @@ panels <- list(
   )
 )
 
+# ---- Background shading: treatment phases ----------------------------------
+# Three phases visible in the published figure:
+#   red    — initial chemotherapy (days 5–7)
+#   orange — trametinib + salvage chemotherapy (days 19–38)
+#   purple — cyclosporin A + etoposide + dexamethasone (days 43–53)
+
+shade <- list(
+  "Case 1" = list(
+    list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+    list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15),
+    list(xmin = 43, xmax = 53, fill = "#B48EAD", alpha = 0.20)
+  )
+)
+
 # ---- Assemble and save -----------------------------------------------------
 
 fig <- make_clinical_figure(
@@ -50,7 +64,8 @@ fig <- make_clinical_figure(
   treatment_data = tx,
   lab_panels     = panels,
   x_range        = c(-5, 55),
-  highlight_days = NULL
+  highlight_days = NULL,
+  shade_regions  = shade
 )
 
 save_clinical_figure(fig, "example_casereport/figure.pdf")
