@@ -31,6 +31,7 @@ panels <- list(
   ),
   lab_panel(
     line_params   = c("CRP (mg/L)", "platelets (10E3/µL)", "triglycerides (mg/dL)"),
+    point_params  = c("triglycerides (mg/dL)"), 
     y_scale       = "linear",
     y_label       = "",
     height_weight = 3
