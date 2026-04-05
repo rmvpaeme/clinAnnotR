@@ -38,27 +38,46 @@ devtools::install_github("rmvpaeme/clinAnnotR")
 
 ## Quick start
 
+The figure above is reproduced by [`example_casereport.R`](example_casereport.R)
+from the data in [`example_casereport/`](example_casereport/):
+
 ```r
 library(clinAnnotR)
 library(readxl)
 
-# Load data from Excel (standard format: relative days)
-lab <- prep_lab_data(read_excel("labvals.xlsx"))
-tx  <- prep_treatment_data(read_excel("treatment.xlsx"))
+# Load data (standard format: relative days)
+lab <- prep_lab_data(read_excel("example_casereport/labvals.xlsx"))
+tx  <- prep_treatment_data(read_excel("example_casereport/treatment.xlsx"))
 
-# Define panels
+# Define panels — mix log10 and linear scales freely
 panels <- list(
   lab_panel(
-    line_params   = c("WBC (/µL)", "neutrophils (/µL)"),
+    line_params   = c("ALT (U/L)", "ferritin (µg/L)", "fibrinogen (mg/dL)",
+                      "neutrophils (/µL)", "WBC (/µL)"),
     y_scale       = "log10",
-    y_label       = "Count (/µL)",
+    y_label       = "",
     height_weight = 4
   ),
   lab_panel(
-    line_params   = c("CRP (mg/L)", "ferritin (µg/L)"),
-    y_scale       = "log10",
-    y_label       = "Inflammation",
+    line_params   = c("CRP (mg/L)", "platelets (10E3/µL)", "triglycerides (mg/dL)"),
+    y_scale       = "linear",
+    y_label       = "",
     height_weight = 3
+  ),
+  lab_panel(
+    line_params   = c("hemoglobin (g/dL)", "total bilirubin (mg/dL)"),
+    y_scale       = "linear",
+    y_label       = "",
+    height_weight = 3
+  )
+)
+
+# Optional: shade treatment phases on all lab panels
+shade <- list(
+  "Case 1" = list(
+    list(xmin = 5,  xmax = 7,  fill = "#BF616A", alpha = 0.15),
+    list(xmin = 19, xmax = 38, fill = "#D08770", alpha = 0.15),
+    list(xmin = 43, xmax = 53, fill = "#B48EAD", alpha = 0.20)
   )
 )
 
@@ -67,25 +86,13 @@ fig <- make_clinical_figure(
   lab_data       = lab,
   treatment_data = tx,
   lab_panels     = panels,
-  x_range        = c(-5, 60)
+  x_range        = c(-5, 55),
+  shade_regions  = shade
 )
 
 save_clinical_figure(fig, "figure.pdf")
 save_clinical_figure(fig, "figure.png", dpi = 300)
 ```
-
----
-
-## Real-data example
-
-The repository ships a complete worked example in [`example_casereport/`](example_casereport/)
-based on a published case report. The figure above was produced by:
-
-```r
-source("example.R")
-```
-
-[`example.R`](example.R) shows how to load the two Excel files, define panels, and save the figure.
 
 ---
 
