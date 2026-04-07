@@ -333,67 +333,91 @@ make_timeseries_panel <- function(
       }
     }
 
-    # Ghost point — placed far off-screen, registers a legend entry only
-    ghost_df <- data.frame(
-      relday    = -99999,
-      value_num = y_lims[[1]],
-      bdl_label = "BDL",
-      stringsAsFactors = FALSE
-    )
-    p <- p + geom_point(
-      data        = ghost_df,
-      mapping     = aes(
-        x     = .data$relday,
-        y     = .data$value_num,
-        shape = .data$bdl_label
-      ),
-      colour      = nord$dark,
-      size        = bdl_size,
-      inherit.aes = FALSE
-    )
+  }
+
+  # Ghost point — placed far off-screen to register a BDL legend entry without
+  # polluting visible data. Added whenever there are actual BDL points (single-
+  # case) or always in multi-case so every panel's Parameters guide includes BDL
+  # and guides are structurally identical (required for patchwork deduplication).
+  if (single_case && has_bdl) {
+    ghost_df  <- data.frame(relday = -99999, value_num = y_lims[[1]],
+                            bdl_label = "BDL", stringsAsFactors = FALSE)
+    ghost_aes <- aes(x = .data$relday, y = .data$value_num,
+                     shape = .data$bdl_label)
+    p <- p + geom_point(data = ghost_df, mapping = ghost_aes,
+                        colour = nord$dark, size = bdl_size, inherit.aes = FALSE)
+  } else if (!single_case) {
+    ghost_df  <- data.frame(relday = -99999, value_num = y_lims[[1]],
+                            parameter = "BDL", stringsAsFactors = FALSE)
+    ghost_aes <- aes(x = .data$relday, y = .data$value_num,
+                     shape = .data$parameter)
+    p <- p + geom_point(data = ghost_df, mapping = ghost_aes,
+                        colour = nord$dark, size = bdl_size, inherit.aes = FALSE)
   }
 
   # ---- Scales ----------------------------------------------------------------
 
-  # Linetype scale — multi-case only (single-case uses solid everywhere)
-  if (!single_case && has_lines && length(line_params) > 0L) {
-    p <- p + scale_linetype_manual(
-      name   = NULL,
-      values = line_linetypes[line_params],
-      guide  = guide_legend(order = 1)
-    )
-  }
-
-  # Shape scale — multi-case point params + BDL ghost
   if (!single_case) {
-    all_shapes <- c(
-      if (has_det)  point_shapes_det[point_params],
-      if (has_bdl)  c("BDL" = bdl_shape)
+    # Multi-case: merge linetype (parameters) and shape (parameters + BDL) into
+    # one "Parameters" legend. ggplot2 merges two GuideLegend objects when their
+    # key labels are identical() — including ORDER. Build both scales from the
+    # same canonical_params vector so the order matches exactly.
+    #
+    # Use global param lists (names of the passed named vectors) so every panel
+    # produces the same guide; patchwork's guides = "collect" then deduplicates.
+    all_line_p  <- if (!is.null(line_linetypes))   names(line_linetypes)   else line_params
+    all_point_p <- if (!is.null(point_shapes_det))  names(point_shapes_det) else point_params
+    point_only_g <- setdiff(all_point_p, all_line_p)
+
+    # Canonical order: line params first, then point-only params, then BDL.
+    canonical_params <- c(all_line_p, point_only_g, "BDL")
+
+    linetypes_full <- setNames(
+      vapply(canonical_params, function(p) {
+        if (p == "BDL" || p %in% point_only_g) "blank" else line_linetypes[[p]]
+      }, character(1L)),
+      canonical_params
     )
-    if (length(all_shapes) > 0L) {
-      p <- p + scale_shape_manual(
-        name   = NULL,
-        values = all_shapes,
-        guide  = guide_legend(
-          order        = 2,
-          override.aes = list(colour = nord$dark)
-        )
-      )
-    }
-  } else if (has_bdl) {
-    # Single-case: only the BDL ghost needs a shape entry
+
+    shapes_full <- setNames(
+      vapply(canonical_params, function(p) {
+        if (p == "BDL") {
+          as.integer(bdl_shape)
+        } else if (p %in% all_point_p && !is.null(point_shapes_det)) {
+          as.integer(point_shapes_det[[p]])
+        } else {
+          16L  # line-only param: solid circle key
+        }
+      }, integer(1L)),
+      canonical_params
+    )
+
+    p <- p + scale_linetype_manual(
+      name   = "Parameters",
+      values = linetypes_full,
+      breaks = canonical_params,
+      guide  = guide_legend(order = 1, override.aes = list(colour = nord$dark))
+    )
+
     p <- p + scale_shape_manual(
-      name   = NULL,
-      values = c("BDL" = bdl_shape),
+      name   = "Parameters",
+      values = shapes_full,
+      breaks = canonical_params,
+      guide  = guide_legend(order = 1, override.aes = list(colour = nord$dark))
+    )
+
+    p <- p + scale_color_manual(
+      name   = "Case",
+      values = pal,
+      breaks = names(pal),
       guide  = guide_legend(
         order        = 2,
-        override.aes = list(colour = nord$dark)
+        override.aes = list(linetype = "blank", shape = 16L)
       )
     )
-  }
 
-  # Colour scale
-  if (single_case) {
+  } else {
+    # Single-case: colour maps to parameter; shape used only for BDL ghost.
     p <- p + scale_color_manual(
       name   = NULL,
       values = param_pal[all_params],
@@ -402,15 +426,17 @@ make_timeseries_panel <- function(
         override.aes = list(linetype = "solid", shape = 16L)
       )
     )
-  } else {
-    p <- p + scale_color_manual(
-      name   = "Case",
-      values = pal,
-      guide  = guide_legend(
-        order        = 3,
-        override.aes = list(linetype = "blank", shape = 16L)
+
+    if (has_bdl) {
+      p <- p + scale_shape_manual(
+        name   = NULL,
+        values = c("BDL" = bdl_shape),
+        guide  = guide_legend(
+          order        = 2,
+          override.aes = list(colour = nord$dark)
+        )
       )
-    )
+    }
   }
 
   # Y-axis

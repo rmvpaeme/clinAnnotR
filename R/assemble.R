@@ -140,6 +140,9 @@ make_clinical_figure <- function(
       spec$highlight_days <- highlight_days
     }
 
+    # Show day labels on reference lines only on the first (topmost) panel
+    if (i > 1L) spec$vline_labels <- FALSE
+
     is_last <- (n_gantt == 0L) && (i == n_lab)
 
     # Flatten shade regions across all cases for shared timeseries panels
@@ -179,6 +182,16 @@ make_clinical_figure <- function(
     )
   }
 
+  # ---- Suppress legends on all panels except the first lab panel ------------
+  # The first lab panel carries the complete global legend (all params + BDL,
+  # all cases) via explicit scale breaks.  All other panels hide their legends
+  # so patchwork collects exactly one copy regardless of deduplication behaviour.
+  if (n_lab > 1L) {
+    for (i in seq(2L, n_lab)) {
+      lab_plots[[i]] <- lab_plots[[i]] + theme(legend.position = "none")
+    }
+  }
+
   # ---- Stack with patchwork -------------------------------------------------
   all_plots   <- c(lab_plots, gantt_plots)
   lab_weights <- vapply(lab_panels, `[[`, numeric(1L), "height_weight")
@@ -208,7 +221,7 @@ make_clinical_figure <- function(
   )
 
   stacked +
-    patchwork::plot_layout(heights = all_weights) +
+    patchwork::plot_layout(heights = all_weights, guides = "collect") +
     patchwork::plot_annotation(
       caption = cap,
       theme   = theme(

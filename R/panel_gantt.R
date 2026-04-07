@@ -161,12 +161,18 @@ make_gantt_panel <- function(
   }
 
   # ---- Auto x-axis breaks ----------------------------------------------------
-  x_break_lo <- floor(x_range[[1]]   / x_breaks_step) * x_breaks_step
-  x_break_hi <- ceiling(x_range[[2]] / x_breaks_step) * x_breaks_step
-  all_manual_breaks <- sort(unique(c(
-    seq(x_break_lo, x_break_hi, by = x_breaks_step),
-    unname(highlight_days)
-  )))
+  x_break_lo  <- floor(x_range[[1]]   / x_breaks_step) * x_breaks_step
+  x_break_hi  <- ceiling(x_range[[2]] / x_breaks_step) * x_breaks_step
+  step_breaks <- seq(x_break_lo, x_break_hi, by = x_breaks_step)
+  hl_pos      <- unname(highlight_days)
+  # Drop step breaks that land within x_breaks_step/3 of a highlight-day
+  # position to prevent label overlap (e.g. 150 crowding 144).
+  if (length(hl_pos) > 0L) {
+    too_close   <- vapply(step_breaks, function(b)
+      any(abs(b - hl_pos) < x_breaks_step / 3), logical(1L))
+    step_breaks <- step_breaks[!too_close]
+  }
+  all_manual_breaks <- sort(unique(c(step_breaks, hl_pos)))
 
   # ---- Build plot ------------------------------------------------------------
   p <- ggplot() +
