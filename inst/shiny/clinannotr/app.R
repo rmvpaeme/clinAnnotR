@@ -233,6 +233,10 @@ server <- function(input, output, session) {
   output$lab_ready <- reactive(!is.null(input$lab_file))
   output$trt_ready <- reactive(!is.null(input$trt_file))
   output$data_loaded <- reactive(!is.null(store$lab))
+
+  # Detected case IDs (populated before ui_cases is rendered)
+  lab_ids <- reactiveVal(character(0))
+  trt_ids <- reactiveVal(character(0))
   outputOptions(output, "lab_ready",   suspendWhenHidden = FALSE)
   outputOptions(output, "trt_ready",   suspendWhenHidden = FALSE)
   outputOptions(output, "data_loaded", suspendWhenHidden = FALSE)
@@ -265,17 +269,56 @@ server <- function(input, output, session) {
   output$ui_trt_class <- renderUI(col_sel("trt_class", "Class (opt.)",
     tc(), guess_col(tc(), c("CLASS","class","Class","drug_class"))))
 
-  # Case input rows
+  # Case input rows — case IDs pre-filled from the lab file
   output$ui_cases <- renderUI({
-    lapply(seq_len(max(1L, as.integer(input$n_cases %||% 1L))), function(i) {
+    ids <- lab_ids()
+    n   <- max(1L, as.integer(input$n_cases %||% 1L))
+    lapply(seq_len(n), function(i) {
       fluidRow(
         column(6, textInput(paste0("cid_", i), if (i==1) "Case ID" else NULL,
+                            value       = if (i <= length(ids)) ids[i] else "",
                             placeholder = paste0("Patient ", i))),
         column(6, textInput(paste0("cref_", i), if (i==1) "Ref date (YYYY-MM-DD)" else NULL,
                             placeholder = "YYYY-MM-DD"))
       )
     })
   })
+
+  # Read all unique patient IDs from lab file whenever file or pid column changes
+  observeEvent(list(input$lab_file, input$lab_pid), {
+    req(input$lab_file, input$lab_pid, nzchar(input$lab_pid %||% ""))
+    raw <- tryCatch(readxl::read_excel(input$lab_file$datapath), error = function(e) NULL)
+    if (is.null(raw) || !input$lab_pid %in% names(raw)) return()
+    ids <- sort(unique(as.character(raw[[input$lab_pid]])))
+    ids <- ids[!is.na(ids) & nzchar(ids)]
+    lab_ids(ids)
+    updateNumericInput(session, "n_cases", value = length(ids))
+  }, ignoreNULL = TRUE)
+
+  # Read all unique patient IDs from treatment file and check against lab IDs
+  observeEvent(list(input$trt_file, input$trt_pid), {
+    req(input$trt_file, input$trt_pid, nzchar(input$trt_pid %||% ""))
+    raw <- tryCatch(readxl::read_excel(input$trt_file$datapath), error = function(e) NULL)
+    if (is.null(raw) || !input$trt_pid %in% names(raw)) return()
+    ids <- sort(unique(as.character(raw[[input$trt_pid]])))
+    ids <- ids[!is.na(ids) & nzchar(ids)]
+    trt_ids(ids)
+    lab <- lab_ids()
+    if (length(lab) > 0) {
+      only_trt <- setdiff(ids, lab)
+      only_lab <- setdiff(lab, ids)
+      if (length(only_trt) > 0 || length(only_lab) > 0) {
+        parts <- c(
+          if (length(only_trt)) paste("in treatment but not lab:", paste(only_trt, collapse = ", ")),
+          if (length(only_lab)) paste("in lab but not treatment:", paste(only_lab, collapse = ", "))
+        )
+        showNotification(
+          paste("Case ID mismatch —", paste(parts, collapse = "; ")),
+          type = "error", duration = 15
+        )
+      }
+    }
+  }, ignoreNULL = TRUE)
 
   # Data store
   store <- reactiveValues(lab = NULL, trt = NULL, params = NULL)
@@ -338,13 +381,13 @@ server <- function(input, output, session) {
         tags$b(paste("Panel", i)),
         fluidRow(
           column(5,
-            selectInput(paste0("p_line_", i), "Line",
+            selectInput(paste0("p_line_", i), "Line graph",
                         choices = params, multiple = TRUE,
                         selected = if (i == 1) params else NULL,
                         width = "100%")
           ),
           column(5,
-            selectInput(paste0("p_point_", i), "Point only",
+            selectInput(paste0("p_point_", i), "Point graph",
                         choices = params, multiple = TRUE,
                         selected = NULL, width = "100%")
           ),
