@@ -442,6 +442,12 @@ server <- function(input, output, session) {
   })
 
   output$fig <- renderPlot({
+    if (is.null(store$lab)) {
+      graphics::plot.new()
+      graphics::text(0.5, 0.5, "Start by uploading data in the sidebar.",
+                     col = "#888888", cex = 1.2)
+      return(invisible(NULL))
+    }
     tryCatch(the_fig(), error = function(e) {
       graphics::plot.new()
       graphics::text(0.5, 0.5, paste("Error:\n", conditionMessage(e)),
@@ -450,7 +456,8 @@ server <- function(input, output, session) {
   }, res = 110)
 
   output$fig_err <- renderText(
-    tryCatch({ the_fig(); "" }, error = function(e) paste("Error:", conditionMessage(e)))
+    if (is.null(store$lab)) "" else
+      tryCatch({ the_fig(); "" }, error = function(e) paste("Error:", conditionMessage(e)))
   )
 
   output$btn_dl <- downloadHandler(
