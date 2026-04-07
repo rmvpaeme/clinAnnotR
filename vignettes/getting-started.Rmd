@@ -1,0 +1,389 @@
+---
+title: "Getting started with clinAnnotR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with clinAnnotR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse  = TRUE,
+  comment   = "#>",
+  fig.width = 7,
+  fig.height = 8,
+  dpi       = 150,
+  out.width = "100%"
+)
+```
+
+clinAnnotR generates multi-panel figures that combine numerical laboratory
+time-series with per-case treatment Gantt charts. Any parameter can be shown as
+a line or point series on log10 or linear axes, with below-detection-limit (BDL)
+handling and optional direct value labels. This vignette walks through the
+complete workflow from loading data to saving a publication-ready figure.
+
+```{r load-package}
+library(clinAnnotR)
+```
+
+---
+
+## 1  Data formats
+
+clinAnnotR expects two data frames.
+
+### Lab values (long format)
+
+| Column      | Type      | Description                                      |
+|-------------|-----------|--------------------------------------------------|
+| `case_id`   | character | Unique case identifier                           |
+| `relday`    | numeric   | Days from the reference date (day 0)             |
+| `parameter` | character | Measurement label, e.g. `"WBC (/µL)"`           |
+| `value`     | character | Raw value; prefix `"<X"` flags a BDL result      |
+
+### Treatment records (wide-ish format)
+
+| Column      | Type      | Description                                              |
+|-------------|-----------|----------------------------------------------------------|
+| `case_id`   | character | Must match `lab_data$case_id`                            |
+| `TREATMENT` | character | Drug or intervention name                                |
+| `START_rel` | numeric   | Treatment start (relative days)                          |
+| `END_rel`   | numeric   | Treatment end (relative days)                            |
+| `COLOR`     | character | Hex fill colour for the Gantt bar, e.g. `"#88C0D0"`     |
+| `CLASS`     | character | Drug class label, e.g. `"Antimetabolite"`                |
+
+Multiple rows with the same `TREATMENT` for one case are rendered as a
+multi-segment Gantt bar, which is useful for cyclic regimens.
+
+---
+
+## 2  Loading data
+
+### Option A — from a CSV or data frame
+
+Use `prep_lab_data()` and `prep_treatment_data()` when relative days are already
+computed (e.g. data read from a CSV, or assembled inline):
+
+```{r prep-from-df}
+raw_lab <- data.frame(
+  case_id   = c("Case 1", "Case 1", "Case 1", "Case 2", "Case 2"),
+  relday    = c(0, 22, 49, 0, 22),
+  parameter = c("WBC (/µL)", "WBC (/µL)", "WBC (/µL)",
+                "WBC (/µL)", "WBC (/µL)"),
+  value     = c("48500", "4400", "2800", "27300", "3200")
+)
+
+raw_tx <- data.frame(
+  case_id   = c("Case 1", "Case 1", "Case 2"),
+  TREATMENT = c("Cytarabine", "Venetoclax", "Cytarabine"),
+  START_rel = c(1, 49, 1),
+  END_rel   = c(7, 185, 7),
+  COLOR     = c("#88C0D0", "#B48EAD", "#88C0D0"),
+  CLASS     = c("Antimetabolite", "BCL2 inhibitor", "Antimetabolite")
+)
+
+lab <- prep_lab_data(raw_lab)
+tx  <- prep_treatment_data(raw_tx)
+```
+
+### Option B — from an Excel file
+
+Use `load_lab_data()` and `load_treatment_data()` when your source data contains
+absolute dates. Pass a `cases` list that pairs each case identifier with its
+reference date (day 0):
+
+```{r load-excel, eval = FALSE}
+cases <- list(
+  list(id = "Case 1", ref_date = "2025-06-03"),
+  list(id = "Case 2", ref_date = "2025-08-12")
+)
+
+lab <- load_lab_data("labvals.xlsx", cases)
+tx  <- load_treatment_data("treatment.xlsx", cases,
+                           col_patientid = "PATIENTID")
+```
+
+Both functions return the same standardised column layout as their
+`prep_*` counterparts.
+
+### Option C — built-in example data
+
+A pair of fictional datasets covering two cases is included in the package:
+
+```{r example-data}
+lab <- example_data("lab")
+tx  <- example_data("treatment")
+
+head(lab, 4)
+head(tx, 4)
+```
+
+---
+
+## 3  Defining lab panels
+
+Each time-series panel is described by a `lab_panel_spec` object created with
+`lab_panel()`. You can have any number of panels; they are stacked vertically
+in the order you supply them.
+
+A spec has no ggplot code — it is just a list of instructions that
+`make_clinical_figure()` interprets later.
+
+```{r panel-specs}
+# Panel 1: WBC line + peripheral blast points on a shared log10 count axis
+panel_counts <- lab_panel(
+  line_params  = "WBC (/µL)",
+  point_params = "peripheral blasts (/µL)",
+  y_label      = "Count (/µL)",
+  height_weight = 4
+)
+
+# Panel 2: BM blast percentages with direct value labels
+panel_blasts <- lab_panel(
+  point_params  = "BM blasts with IF (%)",
+  show_labels   = TRUE,
+  label_suffix  = "%",
+  y_limits      = c(0.05, 200),
+  y_breaks      = c(0.1, 1, 5, 20, 100),
+  y_labels      = paste0(c(0.1, 1, 5, 20, 100), "%"),
+  y_label       = "BM blasts (%)",
+  height_weight = 3
+)
+
+print(panel_counts)
+```
+
+Key arguments:
+
+| Argument       | Default   | Purpose                                               |
+|----------------|-----------|-------------------------------------------------------|
+| `line_params`  | `c()`     | Parameters drawn as connected lines                   |
+| `point_params` | `c()`     | Parameters drawn as points (BDL uses a dedicated symbol) |
+| `y_scale`      | `"log10"` | `"log10"` or `"linear"`                               |
+| `y_label`      | auto      | y-axis title; `NULL` joins all parameter names        |
+| `y_limits`     | auto      | `c(lo, hi)` for fixed axis limits                     |
+| `y_breaks`     | auto      | Break positions on the y-axis                         |
+| `y_labels`     | auto      | Tick labels (character vector or labelling function)   |
+| `show_labels`  | `FALSE`   | Annotate each non-BDL point with its numeric value    |
+| `label_suffix` | `""`      | Appended to every value label, e.g. `"%"`             |
+| `height_weight`| `3`       | Relative panel height in the assembled figure          |
+| `highlight_days`| `NULL`   | Per-panel reference lines (overrides global setting)  |
+
+---
+
+## 4  Assembling the figure
+
+`make_clinical_figure()` combines all lab panels and the Gantt chart(s) into a
+single patchwork object.
+
+```{r make-figure}
+fig <- make_clinical_figure(
+  lab_data       = lab,
+  treatment_data = tx,
+  lab_panels     = list(panel_counts, panel_blasts),
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49)
+)
+
+print(fig)
+```
+
+All panels share the same x-axis range. The x-axis label and ticks appear only
+on the bottom-most panel. The combined legend (cases, parameters, BDL symbol)
+is collected from the first lab panel and shown once.
+
+### Key arguments
+
+| Argument              | Default | Purpose                                                    |
+|-----------------------|---------|------------------------------------------------------------|
+| `lab_data`            | —       | Output of `prep_lab_data()` or `load_lab_data()`          |
+| `treatment_data`      | `NULL`  | Output of `prep_treatment_data()` or `load_treatment_data()`; `NULL` omits Gantt panels |
+| `lab_panels`          | —       | List of `lab_panel_spec` objects                           |
+| `cases`               | auto    | Case IDs to include and their stacking order               |
+| `case_palette`        | auto    | Named vector of hex colours per case                       |
+| `x_range`             | auto    | `c(lo, hi)` in days; defaults to data range ± 5 days      |
+| `highlight_days`      | `NULL`  | Named numeric vector of reference line positions           |
+| `gantt_height_weight` | auto    | Fixed Gantt height; `NULL` scales with treatment row count |
+| `shade_regions`       | `NULL`  | Background shading (see below)                             |
+| `caption`             | auto    | Figure caption text                                        |
+| `base_size`           | `9`     | Base font size applied to all panels                       |
+
+---
+
+## 5  Customisation
+
+### Reference lines (`highlight_days`)
+
+Pass a named numeric vector. Names appear as rotated labels at the top of the
+first lab panel.
+
+```{r highlight, eval = FALSE}
+make_clinical_figure(
+  lab_data       = lab,
+  treatment_data = tx,
+  lab_panels     = list(panel_counts),
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49, "D100" = 100)
+)
+```
+
+Individual panels can override the global `highlight_days` by supplying
+`highlight_days` inside `lab_panel()`.
+
+### Background shading (`shade_regions`)
+
+Shade rectangular regions per case to highlight treatment phases or events.
+Each region is a list with `xmin`, `xmax`, `fill`, and optional `alpha`
+(default `0.15`):
+
+```{r shade, eval = FALSE}
+make_clinical_figure(
+  lab_data       = lab,
+  treatment_data = tx,
+  lab_panels     = list(panel_counts, panel_blasts),
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49),
+  shade_regions  = list(
+    "Case 1" = list(
+      list(xmin = 1,  xmax = 7,   fill = "#88C0D0", alpha = 0.12),
+      list(xmin = 49, xmax = 185, fill = "#B48EAD", alpha = 0.12)
+    ),
+    "Case 2" = list(
+      list(xmin = 1,  xmax = 7,   fill = "#88C0D0", alpha = 0.12),
+      list(xmin = 49, xmax = 185, fill = "#B48EAD", alpha = 0.12)
+    )
+  )
+)
+```
+
+Shaded regions appear behind all data layers on every lab panel and on the
+corresponding case's Gantt panel.
+
+### Fixed x-axis range
+
+```{r x-range, eval = FALSE}
+make_clinical_figure(
+  lab_data       = lab,
+  treatment_data = tx,
+  lab_panels     = list(panel_counts),
+  x_range        = c(-10, 200)
+)
+```
+
+### Custom case colours
+
+```{r case-palette, eval = FALSE}
+make_clinical_figure(
+  lab_data      = lab,
+  treatment_data = tx,
+  lab_panels    = list(panel_counts),
+  case_palette  = c("Case 1" = "#5E81AC", "Case 2" = "#BF616A")
+)
+```
+
+### Linear-scale panel
+
+```{r linear-panel, eval = FALSE}
+panel_linear <- lab_panel(
+  line_params = c("Hemoglobin (g/dL)", "Albumin (g/dL)"),
+  y_scale     = "linear",
+  y_label     = "Concentration (g/dL)"
+)
+```
+
+### Single-case figures
+
+When `lab_data` contains only one case, the colour mapping switches from
+case to parameter automatically — all lines are solid and each parameter
+gets a distinct colour. The Gantt panel is labelled with that case's ID.
+
+```{r single-case}
+lab1 <- lab[lab$case_id == "Case 1", ]
+tx1  <- tx[tx$case_id  == "Case 1", ]
+
+fig1 <- make_clinical_figure(
+  lab_data       = lab1,
+  treatment_data = tx1,
+  lab_panels     = list(panel_counts, panel_blasts),
+  highlight_days = c("D1" = 1, "D22" = 22, "D49" = 49)
+)
+
+print(fig1)
+```
+
+---
+
+## 6  Below-detection-limit (BDL) values
+
+Values prefixed with `"<"` in the raw data (e.g. `"<100"`) are flagged as BDL
+and plotted with a downward-pointing open triangle (shape `6` by default) at
+a configurable floor value. The numeric part of the string is used as the floor
+when it is lower than `bdl_floor`; otherwise `bdl_floor` is used.
+
+The floor defaults to `0.1`, which keeps BDL points visible on a log10 axis
+without distorting the range. You can change it globally or per panel:
+
+```{r bdl-floor, eval = FALSE}
+# Global floor via make_clinical_figure (not currently a direct argument —
+# set it per panel using lab_panel(bdl_floor = ...))
+panel_low_bdl <- lab_panel(
+  line_params = "WBC (/µL)",
+  bdl_floor   = 0.01
+)
+```
+
+A ghost legend entry for the BDL symbol is always included in multi-case mode
+so the symbol is explained even when all BDL values happen to fall off-screen.
+
+---
+
+## 7  Saving the figure
+
+`save_clinical_figure()` wraps `ggplot2::ggsave()` with sensible defaults. The
+output format is inferred from the file extension.
+
+```{r save, eval = FALSE}
+save_clinical_figure(fig, "figure.pdf")
+save_clinical_figure(fig, "figure.png", dpi = 300)
+save_clinical_figure(fig, "figure.svg", width = 14, height = 16, units = "cm")
+```
+
+| Argument | Default | Description                                 |
+|----------|---------|---------------------------------------------|
+| `width`  | `7`     | Figure width                                |
+| `height` | `8`     | Figure height                               |
+| `units`  | `"in"`  | `"in"`, `"cm"`, `"mm"`, or `"px"`          |
+| `dpi`    | `300`   | Resolution (raster formats only)            |
+
+---
+
+## 8  Using the theme and helper layers directly
+
+`theme_clinical()` and `named_vlines()` are exported for use in custom ggplots
+outside the main workflow.
+
+```{r theme-example, fig.height = 3}
+library(ggplot2)
+
+ggplot(data.frame(x = 1:10, y = rnorm(10)), aes(x, y)) +
+  geom_line() +
+  named_vlines(c("Event A" = 3, "Event B" = 7)) +
+  theme_clinical(show_x = TRUE) +
+  labs(x = "Day", y = "Value")
+```
+
+---
+
+## 9  Summary of the main functions
+
+| Function                | Purpose                                                  |
+|-------------------------|----------------------------------------------------------|
+| `example_data()`        | Load fictional example lab or treatment data             |
+| `prep_lab_data()`       | Standardise a data frame with pre-computed relative days |
+| `prep_treatment_data()` | Standardise a treatment data frame                       |
+| `load_lab_data()`       | Read lab data from Excel, computing relative days        |
+| `load_treatment_data()` | Read treatment data from Excel, computing relative days  |
+| `lab_panel()`           | Build a panel specification object                       |
+| `make_clinical_figure()`| Assemble all panels into a stacked patchwork figure      |
+| `save_clinical_figure()`| Save the figure to PDF/PNG/SVG/TIFF                     |
+| `theme_clinical()`      | Apply the clinical ggplot2 theme to any plot             |
+| `named_vlines()`        | Add labelled vertical reference lines to any ggplot      |

@@ -100,7 +100,7 @@ named_vlines <- function(
     label_size  = 2.5,
     label_angle = 90,
     label_hjust = 1.1,
-    label_vjust = 0.4
+    label_vjust = 1.1
 ) {
   if (is.null(timepoints) || length(timepoints) == 0L) return(list())
 
