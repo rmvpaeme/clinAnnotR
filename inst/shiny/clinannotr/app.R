@@ -3,6 +3,14 @@
 
 library(shiny)
 library(readxl)
+# Explicitly loaded so rsconnect detects and installs these on shinyapps.io.
+# They are imports of clinAnnotR and must be present before the package loads.
+library(ggplot2)
+library(ggrepel)
+library(patchwork)
+library(scales)
+library(dplyr)
+library(rlang)
 
 # Load clinAnnotR: installed package first, then fall back to package source.
 # When launched via shiny::runApp("inst/shiny/clinannotr") the working
@@ -11,13 +19,19 @@ if (requireNamespace("clinAnnotR", quietly = TRUE)) {
   library(clinAnnotR)
 } else {
   pkg_root <- normalizePath(file.path(getwd(), "../../.."), mustWork = FALSE)
-  if (!file.exists(file.path(pkg_root, "DESCRIPTION")))
-    stop("clinAnnotR is not installed and the package root could not be located.",
-         call. = FALSE)
-  loader <- if (requireNamespace("pkgload",  quietly = TRUE)) pkgload::load_all
-       else if (requireNamespace("devtools", quietly = TRUE)) devtools::load_all
-       else stop("Install 'pkgload' or 'devtools' to run from source.", call. = FALSE)
-  loader(pkg_root, quiet = TRUE)
+  if (file.exists(file.path(pkg_root, "DESCRIPTION"))) {
+    # Running from local source (devtools / shiny::runApp)
+    loader <- if (requireNamespace("pkgload",  quietly = TRUE)) pkgload::load_all
+         else if (requireNamespace("devtools", quietly = TRUE)) devtools::load_all
+         else stop("Install 'pkgload' or 'devtools' to run from source.", call. = FALSE)
+    loader(pkg_root, quiet = TRUE)
+  } else {
+    # shinyapps.io: install from GitHub
+    if (!requireNamespace("remotes", quietly = TRUE))
+      install.packages("remotes")
+    remotes::install_github("rmvpaeme/clinAnnotR")
+    library(clinAnnotR)
+  }
 }
 
 # ---------------------------------------------------------------------------
