@@ -203,7 +203,8 @@ is collected from the first lab panel and shown once.
 | `cases`               | auto    | Case IDs to include and their stacking order               |
 | `case_palette`        | auto    | Named vector of hex colours per case                       |
 | `x_range`             | auto    | `c(lo, hi)` in days; defaults to data range ± 5 days      |
-| `highlight_days`      | `NULL`  | Named numeric vector of reference line positions           |
+| `highlight_days`      | `NULL`  | Named numeric vector of reference line positions (all panels) |
+| `highlight_days_by_case`| `NULL`  | Named list of per-case reference line overrides for Gantt panels |
 | `gantt_height_weight` | auto    | Fixed Gantt height; `NULL` scales with treatment row count |
 | `shade_regions`       | `NULL`  | Background shading (see below)                             |
 | `caption`             | auto    | Figure caption text                                        |
@@ -230,14 +231,37 @@ make_clinical_figure(
 Individual panels can override the global `highlight_days` by supplying
 `highlight_days` inside `lab_panel()`.
 
+### Per-case reference lines (`highlight_days_by_case`)
+
+By default every Gantt panel inherits the global `highlight_days`. When cases
+have different clinical timepoints you can supply a named list via
+`highlight_days_by_case` to give each case its own set of lines. Cases not listed
+fall back to the global vector; pass an empty vector `c()` to suppress all lines
+for a specific case.
+
+```{r gantt-highlight}
+fig_gantt_hl <- make_clinical_figure(
+  lab_data             = lab,
+  treatment_data       = tx,
+  lab_panels           = list(panel_counts, panel_blasts),
+  highlight_days       = c("D1" = 1, "D22" = 22, "D49" = 49),
+  highlight_days_by_case = list(
+    "Case 1" = c("D1" = 1, "D49" = 49),   # only these two lines on Case 1 Gantt
+    "Case 2" = c("D1" = 1, "D22" = 22)    # only these two lines on Case 2 Gantt
+  )
+)
+
+print(fig_gantt_hl)
+```
+
 ### Background shading (`shade_regions`)
 
 Shade rectangular regions per case to highlight treatment phases or events.
 Each region is a list with `xmin`, `xmax`, `fill`, and optional `alpha`
 (default `0.15`):
 
-```{r shade, eval = FALSE}
-make_clinical_figure(
+```{r shade}
+fig_shade <- make_clinical_figure(
   lab_data       = lab,
   treatment_data = tx,
   lab_panels     = list(panel_counts, panel_blasts),
@@ -253,6 +277,8 @@ make_clinical_figure(
     )
   )
 )
+
+print(fig_shade)
 ```
 
 Shaded regions appear behind all data layers on every lab panel and on the

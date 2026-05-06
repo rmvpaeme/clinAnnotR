@@ -27,6 +27,21 @@
 #'   on **every** panel (e.g. `c("D1" = 1, "D22" = 22, "D49" = 49)`).
 #'   Individual lab panels can override this via [lab_panel()]'s
 #'   `highlight_days` argument. `NULL` = no reference lines. Default: `NULL`.
+#' @param highlight_days_by_case Named list of reference line overrides for
+#'   individual Gantt panels, keyed by case ID. Each element is a named numeric
+#'   vector in the same format as `highlight_days`. When a case ID is present
+#'   here its Gantt panel shows *only* those lines; cases not listed fall back to
+#'   the global `highlight_days`. Use `NULL` (or omit the entry) to show the
+#'   global lines for a case, or supply an empty vector `c()` to suppress all
+#'   lines for that case. Default: `NULL` (global `highlight_days` used for all
+#'   Gantt panels).
+#'
+#'   Example (Case 1 gets its own subset of lines; Case 2 gets the global set):
+#'   ```r
+#'   highlight_days_by_case = list(
+#'     "Case 1" = c("D0" = 0, "D22" = 22, "ADE C1" = 41)
+#'   )
+#'   ```
 #' @param gantt_height_weight Positive numeric or `NULL`. Relative height of
 #'   each Gantt panel in the patchwork stack. When `NULL` (default), the height
 #'   is computed automatically as `max(1.5, n_treatments * 0.4)` so panels with
@@ -101,8 +116,10 @@ make_clinical_figure <- function(
     case_shapes         = NULL,
     x_range             = NULL,
     highlight_days      = NULL,
+    highlight_days_by_case = NULL,
     shade_regions       = NULL,
     gantt_height_weight = NULL,
+    point_shapes_det    = NULL,
     caption             = NULL,
     caption_size        = 7,
     nord                = NULL,
@@ -125,6 +142,22 @@ make_clinical_figure <- function(
   all_point_params <- unique(unlist(lapply(lab_panels, `[[`, "point_params")))
   global_linetypes  <- .assign_linetypes(all_line_params)
   global_pt_shapes  <- .assign_param_shapes(all_point_params)
+  if (!is.null(point_shapes_det)) {
+    global_pt_shapes[names(point_shapes_det)] <- as.integer(point_shapes_det)
+  }
+
+  # ---- Union of all highlight positions for lab panels ----------------------
+  # Lab panels show data for all cases, so any day listed in
+  # highlight_days_by_case must also appear there (in addition to the global
+  # highlight_days set).
+  lab_highlight_days <- highlight_days
+  if (!is.null(highlight_days_by_case)) {
+    all_case_days <- do.call(c, highlight_days_by_case)
+    new_days      <- all_case_days[!unname(all_case_days) %in%
+                                     unname(lab_highlight_days)]
+    new_days      <- new_days[!duplicated(unname(new_days))]
+    lab_highlight_days <- c(lab_highlight_days, new_days)
+  }
 
   # ---- Build lab panels -----------------------------------------------------
   n_lab  <- length(lab_panels)
@@ -135,9 +168,9 @@ make_clinical_figure <- function(
   for (i in seq_len(n_lab)) {
     spec <- lab_panels[[i]]
 
-    # Inject global highlight_days when the spec doesn't override
+    # Inject combined highlight_days when the spec doesn't override
     if (is.null(spec$highlight_days)) {
-      spec$highlight_days <- highlight_days
+      spec$highlight_days <- lab_highlight_days
     }
 
     # Show day labels on reference lines only on the first (topmost) panel
@@ -170,11 +203,18 @@ make_clinical_figure <- function(
   for (j in seq_len(n_gantt)) {
     case_j <- case_ids[[j]]
     tx_j   <- treatment_data[treatment_data$case_id == case_j, , drop = FALSE]
+    tx_j$COLOR <- pal[[case_j]]   # colour bars by case, not by treatment class
     is_last <- (j == n_gantt)
+    gantt_hl <- if (!is.null(highlight_days_by_case) &&
+                    case_j %in% names(highlight_days_by_case)) {
+      highlight_days_by_case[[case_j]]
+    } else {
+      highlight_days
+    }
     gantt_plots[[j]] <- make_gantt_panel(
       treatment_data  = tx_j,
       case_label      = paste0(case_j, " \u2014 treatments"),
-      highlight_days  = highlight_days,
+      highlight_days  = gantt_hl,
       x_range         = x_range,
       show_x          = is_last,
       nord            = nord,

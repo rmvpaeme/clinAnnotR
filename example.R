@@ -43,6 +43,25 @@ save_clinical_figure(fig_builtin, "inst/extdata/example_figure.png", dpi = 150)
 message("1. Built-in example: OK")
 
 # ============================================================
+# 1b. Per-case reference lines (highlight_days_by_case)
+#     Case 1 Gantt shows D1/D49 only; Case 2 Gantt shows D1/D22 only.
+#     Lab panels still receive the full global highlight_days set.
+# ============================================================
+
+fig_gantt_hl <- make_clinical_figure(
+  lab_data             = lab,
+  treatment_data       = tx,
+  lab_panels           = panels_2case,
+  highlight_days       = c("D1" = 1, "D22" = 22, "D49" = 49),
+  highlight_days_by_case = list(
+    "Case 1" = c("D1" = 1, "D49" = 49),
+    "Case 2" = c("D1" = 1, "D22" = 22)
+  )
+)
+save_clinical_figure(fig_gantt_hl, "inst/extdata/example_figure_gantt_hl.png", dpi = 150)
+message("1b. Per-case Gantt highlight lines: OK")
+
+# ============================================================
 # 2. Relative-day Excel (inst/extdata/example_labvals.xlsx)
 #    Standard format — same data as above, from file
 # ============================================================

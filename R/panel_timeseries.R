@@ -346,25 +346,21 @@ make_timeseries_panel <- function(
                      shape = .data$bdl_label)
     p <- p + geom_point(data = ghost_df, mapping = ghost_aes,
                         colour = nord$dark, size = bdl_size, inherit.aes = FALSE)
-  } else if (!single_case) {
-    ghost_df  <- data.frame(relday = -99999, value_num = y_lims[[1]],
-                            parameter = "BDL", stringsAsFactors = FALSE)
-    ghost_aes <- aes(x = .data$relday, y = .data$value_num,
-                     shape = .data$parameter)
-    p <- p + geom_point(data = ghost_df, mapping = ghost_aes,
-                        colour = nord$dark, size = bdl_size, inherit.aes = FALSE)
   }
 
   # ---- Scales ----------------------------------------------------------------
 
   if (!single_case) {
-    # Multi-case: merge linetype (parameters) and shape (parameters + BDL) into
-    # one "Parameters" legend. ggplot2 merges two GuideLegend objects when their
-    # key labels are identical() — including ORDER. Build both scales from the
-    # same canonical_params vector so the order matches exactly.
+    # Multi-case: two scales both named "Parameters" → ggplot2 merges them into
+    # one combined guide. Both guide keys must have identical rows.
     #
-    # Use global param lists (names of the passed named vectors) so every panel
-    # produces the same guide; patchwork's guides = "collect" then deduplicates.
+    # Two ghost layers with NA coordinates (never rendered in the plot) seed
+    # both scale domains with ALL canonical_params so every panel's guide has
+    # the same length(canonical_params) rows regardless of what visible data
+    # that specific panel contains.
+    #
+    # ghost_line → draw_key_path  → correct linetype shown in each key cell
+    # ghost_pt   → draw_key_point → correct shape shown in each key cell
     all_line_p  <- if (!is.null(line_linetypes))   names(line_linetypes)   else line_params
     all_point_p <- if (!is.null(point_shapes_det))  names(point_shapes_det) else point_params
     point_only_g <- setdiff(all_point_p, all_line_p)
@@ -372,12 +368,21 @@ make_timeseries_panel <- function(
     # Canonical order: line params first, then point-only params, then BDL.
     canonical_params <- c(all_line_p, point_only_g, "BDL")
 
+    # Actual rendering linetypes (used by scale and data geom_line).
     linetypes_full <- setNames(
       vapply(canonical_params, function(p) {
         if (p == "BDL" || p %in% point_only_g) "blank" else line_linetypes[[p]]
       }, character(1L)),
       canonical_params
     )
+
+    # Legend-only override: suppress the line in the key for params that are
+    # also rendered as shapes (e.g. BM blasts shows triangle, not dashed line).
+    # With ghost layers the guide key has length(canonical_params) rows, so
+    # a 5-element override.aes vector is safe.
+    legend_lt_override <- vapply(canonical_params, function(p) {
+      if (p == "BDL" || p %in% all_point_p) "blank" else line_linetypes[[p]]
+    }, character(1L))
 
     shapes_full <- setNames(
       vapply(canonical_params, function(p) {
@@ -386,24 +391,55 @@ make_timeseries_panel <- function(
         } else if (p %in% all_point_p && !is.null(point_shapes_det)) {
           as.integer(point_shapes_det[[p]])
         } else {
-          16L  # line-only param: solid circle key
+          16L  # line-only param: circle shown alongside solid line in key
         }
       }, integer(1L)),
       canonical_params
+    )
+
+    ghost_line_df <- do.call(rbind, lapply(canonical_params, function(cp) {
+      data.frame(relday = NA_real_, value_num = NA_real_,
+                 parameter = cp, stringsAsFactors = FALSE)
+    }))
+    p <- p + geom_line(
+      data        = ghost_line_df,
+      mapping     = aes(x = .data$relday, y = .data$value_num,
+                        linetype = .data$parameter, group = .data$parameter),
+      linewidth   = spec$line_linewidth,
+      colour      = nord$dark,
+      inherit.aes = FALSE
+    )
+
+    ghost_pt_df <- data.frame(
+      relday    = rep(NA_real_, length(canonical_params)),
+      value_num = rep(NA_real_, length(canonical_params)),
+      parameter = canonical_params,
+      stringsAsFactors = FALSE
+    )
+    p <- p + geom_point(
+      data        = ghost_pt_df,
+      mapping     = aes(x = .data$relday, y = .data$value_num,
+                        shape = .data$parameter),
+      size        = spec$point_size %||% 1.5,
+      colour      = nord$dark,
+      inherit.aes = FALSE
     )
 
     p <- p + scale_linetype_manual(
       name   = "Parameters",
       values = linetypes_full,
       breaks = canonical_params,
-      guide  = guide_legend(order = 1, override.aes = list(colour = nord$dark))
+      guide  = guide_legend(
+        order        = 1,
+        override.aes = list(linetype = legend_lt_override)
+      )
     )
 
     p <- p + scale_shape_manual(
       name   = "Parameters",
       values = shapes_full,
       breaks = canonical_params,
-      guide  = guide_legend(order = 1, override.aes = list(colour = nord$dark))
+      guide  = guide_legend(order = 1)
     )
 
     p <- p + scale_color_manual(
