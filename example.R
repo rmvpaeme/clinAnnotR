@@ -21,6 +21,7 @@ panels_2case <- list(
     height_weight = 4
   ),
   lab_panel(
+    line_params   = "BM blasts with IF (%)",
     point_params  = "BM blasts with IF (%)",
     show_labels   = TRUE,
     label_suffix  = "%",

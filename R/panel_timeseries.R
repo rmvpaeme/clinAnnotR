@@ -435,11 +435,22 @@ make_timeseries_panel <- function(
       )
     )
 
+    # Hide the shape icon for line-only params (e.g. WBC) so the merged
+    # legend shows just the line, not a spurious circle alongside it.
+    # The guide key has length(canonical_params) rows from ghost seeding,
+    # so a per-row size override vector is safe here.
+    override_size <- vapply(canonical_params, function(p) {
+      if (!p %in% all_point_p && p != "BDL") 0 else spec$point_size %||% 1.5
+    }, numeric(1L))
+
     p <- p + scale_shape_manual(
       name   = "Parameters",
       values = shapes_full,
       breaks = canonical_params,
-      guide  = guide_legend(order = 1)
+      guide  = guide_legend(
+        order        = 1,
+        override.aes = list(size = override_size)
+      )
     )
 
     p <- p + scale_color_manual(
